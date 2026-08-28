@@ -1,28 +1,16 @@
 /**
  * 最终要求：
- *
- * 1) 套入24手阶段：
- *    不预测，只提示当前需要命中的组三连
- *
- * 2) 套完24手：
- *    进入门槛 PBP（虚拟25/26/27）
- *
- * 3) 门槛三手至少中1手：
- *    才进入正式逐手预测
- *
- * 4) 正式预测：
- *    BBP -> PPB -> PBP -> BBP -> PPB
- *    -> PBP -> PBB -> PBP ...
- *
- * 5) 新增：
- *    截图识别红蓝绿路单
+ * 1) 套入24手阶段：不预测，只提示当前需要命中哪组三连
+ * 2) 套完24手后：进入门槛PBP（虚拟25/26/27）
+ * 3) 门槛三手里至少中1手 -> 才开始后面逐手预测
+ * 4) 过门槛后从BBP开始循环
+ * 5) 截图识别：
  *    红 = B
  *    蓝 = P
  *    绿 = T
- *
- *    T（和）识别出来，但不进入B/P预测历史。
+ * 6) T识别但不进入B/P预测历史
+ * 7) 新增尺寸过滤，避免小红点/小蓝点被误识别成独立B/P
  */
-
 
 const GROUPS = [
   "PBP",
@@ -36,109 +24,82 @@ const GROUPS = [
 ];
 
 const LOOP_GROUPS =
-  GROUPS.slice(1)
-        .concat(GROUPS.slice(0,1));
-
+  GROUPS.slice(1).concat(GROUPS.slice(0,1));
 
 let gameHistory = [];
-
 let waiting = false;
 
-
-/* =========================
-   阶段
-   ========================= */
-
+// phase：0套入，1门槛，2预测
 let phase = 0;
 
 
-/* =========================
-   phase 0
-   ========================= */
+// =========================
+// phase 0
+// =========================
 
 let matchIdx = 0;
-
 let completedAtRealHand = 0;
-
 let phase0Cursor = 0;
 
 
-/* =========================
-   phase 1
-   ========================= */
+// =========================
+// phase 1
+// =========================
 
 let gateStep = 0;
-
 let gateHits = 0;
-
 let lastGateLine = "";
 
 
-/* =========================
-   phase 2
-   ========================= */
+// =========================
+// phase 2
+// =========================
 
 let loopGroupIdx = 0;
-
 let loopPos = 0;
-
 let phase2StartRealHand = 0;
 
 
-
-/* =========================
-   DOM
-   ========================= */
+// =========================
+// DOM
+// =========================
 
 function byId(id){
   return document.getElementById(id);
 }
-
 
 function $(sel){
   return document.querySelector(sel);
 }
 
 
-
-/* =========================
-   按钮状态
-   ========================= */
+// =========================
+// 按钮状态
+// =========================
 
 function setButtonsDisabled(disabled){
 
   const p = $('.player-btn');
-
   const b = $('.banker-btn');
-
   const back = $('.back-btn');
-
   const reset = $('.reset-btn');
-
   const scan = $('.scan-btn');
 
-
   if(p) p.disabled = disabled;
-
   if(b) b.disabled = disabled;
-
   if(back) back.disabled = disabled;
-
   if(reset) reset.disabled = disabled;
-
   if(scan) scan.disabled = disabled;
 }
 
 
-
-/* =========================
-   标签
-   ========================= */
+// =========================
+// AI标签
+// =========================
 
 function setLabelAI(){
 
-  const label =
-    byId('resultLabel');
+  const label = byId('resultLabel');
 
   if(label){
 
@@ -151,14 +112,11 @@ function setLabelAI(){
   }
 }
 
-
 function setLabelSide(side){
 
-  const label =
-    byId('resultLabel');
+  const label = byId('resultLabel');
 
   if(!label) return;
-
 
   label.textContent = side;
 
@@ -175,35 +133,28 @@ function setLabelSide(side){
 }
 
 
-
-/* =========================
-   文字
-   ========================= */
+// =========================
+// 显示文字
+// =========================
 
 function showTextOnly(msg){
 
   setLabelAI();
 
-  const pctEl =
-    byId('resultPct');
-
-  const text =
-    byId('predictionText');
-
+  const pctEl = byId('resultPct');
+  const text = byId('predictionText');
 
   if(pctEl)
     pctEl.textContent = '';
-
 
   if(text)
     text.textContent = msg;
 }
 
 
-
-/* =========================
-   历史
-   ========================= */
+// =========================
+// 历史记录
+// =========================
 
 function renderHistory(){
 
@@ -213,9 +164,7 @@ function renderHistory(){
   if(!recordDisplay)
     return;
 
-
   recordDisplay.innerHTML = '';
-
 
   gameHistory.forEach(type=>{
 
@@ -232,28 +181,24 @@ function renderHistory(){
 }
 
 
-
-/* =========================
-   虚拟手数
-   ========================= */
+// =========================
+// 虚拟手数
+// =========================
 
 function virtualHandFor(realHand){
 
   if(!completedAtRealHand)
     return null;
 
-
   if(phase === 1){
 
     return 25 + gateStep;
   }
 
-
   if(phase === 2){
 
     if(!phase2StartRealHand)
       return null;
-
 
     return 28 +
       (
@@ -262,29 +207,24 @@ function virtualHandFor(realHand){
       );
   }
 
-
   return null;
 }
-
 
 function fmtHand(realHand){
 
   const v =
     virtualHandFor(realHand);
 
-
   if(v === null)
     return `第${realHand}手`;
-
 
   return `第${realHand}手(${v}手)`;
 }
 
 
-
-/* =========================
-   下一手预测
-   ========================= */
+// =========================
+// 下一手预测
+// =========================
 
 function nextPredLetter(){
 
@@ -293,35 +233,30 @@ function nextPredLetter(){
     return "PBP"[gateStep];
   }
 
-
   const g =
     LOOP_GROUPS[
       loopGroupIdx %
       LOOP_GROUPS.length
     ];
 
-
   return g[loopPos];
 }
 
 
-
-/* =========================
-   核心推进
-   ========================= */
+// =========================
+// 核心推进
+// =========================
 
 function advanceAfterInput(actual){
 
-
-  /* =====================
-     phase 0：套入
-     ===================== */
+  // =====================
+  // phase 0：套入24手
+  // =====================
 
   if(phase === 0){
 
     const need =
       GROUPS[matchIdx];
-
 
     if(
       actual ===
@@ -330,16 +265,13 @@ function advanceAfterInput(actual){
 
       phase0Cursor++;
 
-
       if(
         phase0Cursor ===
         need.length
       ){
 
         matchIdx++;
-
         phase0Cursor = 0;
-
 
         if(
           matchIdx >=
@@ -348,119 +280,89 @@ function advanceAfterInput(actual){
 
           matchIdx = 0;
 
-
           completedAtRealHand =
             gameHistory.length;
 
-
           phase = 1;
 
-
           gateStep = 0;
-
           gateHits = 0;
-
 
           lastGateLine =
             `✅ 第${completedAtRealHand}手(24手)已套完\n` +
             `开始门槛：下一手是(25手)`;
 
-
           loopGroupIdx = 0;
-
           loopPos = 0;
-
           phase2StartRealHand = 0;
         }
       }
     }
 
-
     return;
   }
 
 
-
-  /* =====================
-     phase 1：PBP门槛
-     ===================== */
+  // =====================
+  // phase 1：PBP门槛
+  // =====================
 
   if(phase === 1){
 
     const pred =
       "PBP"[gateStep];
 
-
     const hit =
       actual === pred;
-
 
     if(hit)
       gateHits++;
 
-
     const realHand =
       gameHistory.length;
 
-
     lastGateLine =
       `门槛阶段：${fmtHand(realHand)}\n` +
-
-      `本手结果=${actual}｜` +
-      `本手门槛预测=${pred}\n` +
-
-      `进度：${gateStep + 1}/3｜` +
-      `累计命中：${gateHits}/3\n` +
-
+      `本手结果=${actual}｜本手门槛预测=${pred}\n` +
+      `进度：${gateStep + 1}/3｜累计命中：${gateHits}/3\n` +
       `（必须走满3手，三手里至少中1手才开始后面逐手预测）`;
-
 
     gateStep++;
 
-
     if(gateStep < 3)
       return;
-
 
     if(gateHits >= 1){
 
       phase = 2;
 
-
       phase2StartRealHand =
         gameHistory.length + 1;
 
-
       loopGroupIdx = 0;
-
       loopPos = 0;
 
     }else{
 
       gateStep = 0;
-
       gateHits = 0;
     }
-
 
     return;
   }
 
 
-
-  /* =====================
-     phase 2：正式预测
-     ===================== */
+  // =====================
+  // phase 2：正式预测
+  // =====================
 
   if(phase === 2){
 
     loopPos++;
 
-
     if(loopPos >= 3){
 
       loopPos = 0;
-
 
       loopGroupIdx =
         (
@@ -472,24 +374,19 @@ function advanceAfterInput(actual){
 }
 
 
-
-/* =========================
-   页面显示
-   ========================= */
+// =========================
+// 更新页面
+// =========================
 
 function updateView(){
 
   const upcomingReal =
     gameHistory.length + 1;
 
-
-  /* phase 0 */
-
   if(phase === 0){
 
     const need =
       GROUPS[matchIdx];
-
 
     showTextOnly(
       `套入24手中：当前需要命中 ${need}\n` +
@@ -500,51 +397,34 @@ function updateView(){
   }
 
 
-
-  /* phase 1 */
-
   if(phase === 1){
 
     const p =
       nextPredLetter();
 
-
     setLabelSide(p);
-
 
     const text =
       byId('predictionText');
 
-
     if(text){
 
       text.textContent =
-
         `✅ 第${completedAtRealHand}手(24手)已套完\n` +
-
         (
           lastGateLine ||
-
-          `门槛：${fmtHand(upcomingReal)}` +
-
-          `（25/26/27必须走满3手再判定）`
+          `门槛：${fmtHand(upcomingReal)}（25/26/27必须走满3手再判定）`
         );
     }
-
 
     return;
   }
 
 
-
-  /* phase 2 */
-
   const p =
     nextPredLetter();
 
-
   setLabelSide(p);
-
 
   const g =
     LOOP_GROUPS[
@@ -552,70 +432,52 @@ function updateView(){
       LOOP_GROUPS.length
     ];
 
-
   const text =
     byId('predictionText');
-
 
   if(text){
 
     text.textContent =
-
       `✅ 已过门槛（PBP三手至少中1手）\n` +
-
       `依次预测：${fmtHand(upcomingReal)}\n` +
-
-      `当前组：${g}（第${loopPos+1}/3）｜` +
-
-      `本手预测：${p}`;
+      `当前组：${g}（第${loopPos+1}/3）｜本手预测：${p}`;
   }
 }
 
 
-
-/* =========================
-   重算
-   ========================= */
+// =========================
+// 重算
+// =========================
 
 function recomputeFromHistory(arr){
 
   phase = 0;
-
   matchIdx = 0;
-
   completedAtRealHand = 0;
-
   phase0Cursor = 0;
 
   gateStep = 0;
-
   gateHits = 0;
-
   lastGateLine = "";
 
   loopGroupIdx = 0;
-
   loopPos = 0;
-
   phase2StartRealHand = 0;
 
   gameHistory = [];
-
 
   arr.forEach(x=>{
 
     gameHistory.push(x);
 
     advanceAfterInput(x);
-
   });
 }
 
 
-
-/* =========================
-   手动输入
-   ========================= */
+// =========================
+// 手动输入
+// =========================
 
 window.recordResult =
 function(type){
@@ -623,43 +485,33 @@ function(type){
   if(waiting)
     return;
 
-
   if(
     type !== 'B' &&
     type !== 'P'
   )
     return;
 
-
   waiting = true;
-
 
   setButtonsDisabled(true);
 
-
   gameHistory.push(type);
-
 
   renderHistory();
 
-
   advanceAfterInput(type);
-
 
   updateView();
 
-
   waiting = false;
-
 
   setButtonsDisabled(false);
 };
 
 
-
-/* =========================
-   Back
-   ========================= */
+// =========================
+// Back
+// =========================
 
 window.undoLastMove =
 function(){
@@ -667,28 +519,22 @@ function(){
   if(waiting)
     return;
 
-
   const old =
     [...gameHistory];
 
-
   old.pop();
-
 
   recomputeFromHistory(old);
 
-
   renderHistory();
-
 
   updateView();
 };
 
 
-
-/* =========================
-   Reset
-   ========================= */
+// =========================
+// Reset
+// =========================
 
 window.resetGame =
 function(){
@@ -696,38 +542,27 @@ function(){
   if(waiting)
     return;
 
-
   recomputeFromHistory([]);
 
-
   renderHistory();
-
 
   showTextOnly(
     '已重置：先套入24手（顺序命中，允许插）→ 门槛PBP三手 → 过门槛才逐手预测。'
   );
 
-
   updateView();
 };
 
 
-
-/* =========================================================
-   截图识别
-   ========================================================= */
-
-
-/*
- * 打开图片
- */
+// ======================================================
+// 截图识别
+// ======================================================
 
 window.openScreenshot =
 function(){
 
   const input =
     byId('imageInput');
-
 
   if(input){
 
@@ -738,19 +573,15 @@ function(){
 };
 
 
-
-/*
- * RGB -> HSV
- */
+// =========================
+// RGB转HSV
+// =========================
 
 function rgbToHSV(r,g,b){
 
   r /= 255;
-
   g /= 255;
-
   b /= 255;
-
 
   const max =
     Math.max(r,g,b);
@@ -758,13 +589,10 @@ function rgbToHSV(r,g,b){
   const min =
     Math.min(r,g,b);
 
-
   const d =
     max - min;
 
-
   let h = 0;
-
 
   if(d !== 0){
 
@@ -773,9 +601,7 @@ function rgbToHSV(r,g,b){
       h =
         60 *
         (
-          (
-            (g-b)/d
-          ) % 6
+          ((g-b)/d) % 6
         );
 
     }else if(max === g){
@@ -796,16 +622,13 @@ function rgbToHSV(r,g,b){
     }
   }
 
-
   if(h < 0)
     h += 360;
-
 
   const s =
     max === 0
       ? 0
       : d/max;
-
 
   return {
     h:h,
@@ -815,25 +638,17 @@ function rgbToHSV(r,g,b){
 }
 
 
-
-/*
- * 判断颜色
- *
- * 返回：
- * B = 红
- * P = 蓝
- * T = 绿
- */
+// =========================
+// 判断颜色
+// =========================
 
 function classifyColor(r,g,b,a){
 
   if(a < 180)
     return null;
 
-
   const hsv =
     rgbToHSV(r,g,b);
-
 
   if(
     hsv.s < 0.38 ||
@@ -843,7 +658,7 @@ function classifyColor(r,g,b,a){
   }
 
 
-  /* 红 */
+  // 红色 = B
 
   if(
     hsv.h <= 18 ||
@@ -853,7 +668,7 @@ function classifyColor(r,g,b,a){
   }
 
 
-  /* 蓝 */
+  // 蓝色 = P
 
   if(
     hsv.h >= 190 &&
@@ -863,7 +678,7 @@ function classifyColor(r,g,b,a){
   }
 
 
-  /* 绿 */
+  // 绿色 = T
 
   if(
     hsv.h >= 80 &&
@@ -872,15 +687,13 @@ function classifyColor(r,g,b,a){
     return 'T';
   }
 
-
   return null;
 }
 
 
-
-/*
- * 连通区域检测
- */
+// =========================
+// 连通区域检测
+// =========================
 
 function findComponents(
   imageData,
@@ -892,23 +705,14 @@ function findComponents(
   const data =
     imageData.data;
 
-
   const total =
     width * height;
-
 
   const mask =
     new Uint8Array(total);
 
-
   const visited =
     new Uint8Array(total);
-
-
-
-  /*
-   * 先生成颜色mask
-   */
 
   for(
     let i=0;
@@ -919,7 +723,6 @@ function findComponents(
     const p =
       i * 4;
 
-
     const type =
       classifyColor(
         data[p],
@@ -928,18 +731,13 @@ function findComponents(
         data[p+3]
       );
 
-
     if(type === targetType)
       mask[i] = 1;
   }
 
 
-
   const result = [];
-
-
   const stack = [];
-
 
   const minArea =
     Math.max(
@@ -963,30 +761,20 @@ function findComponents(
       continue;
     }
 
-
     visited[index] = 1;
 
-
     stack.length = 0;
-
     stack.push(index);
-
 
     let area = 0;
 
     let sumX = 0;
-
     let sumY = 0;
 
-
     let minX = width;
-
     let minY = height;
-
     let maxX = 0;
-
     let maxY = 0;
-
 
 
     while(stack.length){
@@ -994,39 +782,29 @@ function findComponents(
       const current =
         stack.pop();
 
-
       const y =
         Math.floor(
           current / width
         );
 
-
       const x =
         current -
         y * width;
 
-
       area++;
 
       sumX += x;
-
       sumY += y;
 
-
       if(x < minX) minX = x;
-
       if(x > maxX) maxX = x;
-
       if(y < minY) minY = y;
-
       if(y > maxY) maxY = y;
-
-
 
       let n;
 
 
-      /* 左 */
+      // 左
 
       if(x > 0){
 
@@ -1039,13 +817,12 @@ function findComponents(
         ){
 
           visited[n] = 1;
-
           stack.push(n);
         }
       }
 
 
-      /* 右 */
+      // 右
 
       if(x < width-1){
 
@@ -1058,13 +835,12 @@ function findComponents(
         ){
 
           visited[n] = 1;
-
           stack.push(n);
         }
       }
 
 
-      /* 上 */
+      // 上
 
       if(y > 0){
 
@@ -1077,13 +853,12 @@ function findComponents(
         ){
 
           visited[n] = 1;
-
           stack.push(n);
         }
       }
 
 
-      /* 下 */
+      // 下
 
       if(y < height-1){
 
@@ -1096,13 +871,10 @@ function findComponents(
         ){
 
           visited[n] = 1;
-
           stack.push(n);
         }
       }
-
     }
-
 
 
     if(area < minArea)
@@ -1112,14 +884,9 @@ function findComponents(
     const bw =
       maxX-minX+1;
 
-
     const bh =
       maxY-minY+1;
 
-
-    /*
-     * 排除很细的线、文字等
-     */
 
     if(
       bw < 6 ||
@@ -1150,33 +917,150 @@ function findComponents(
       continue;
 
 
-
     result.push({
 
       type:targetType,
 
       x:sumX/area,
-
       y:sumY/area,
 
       width:bw,
-
       height:bh,
 
       area:area
-
     });
   }
-
 
   return result;
 }
 
 
+// ======================================================
+// 新增：过滤小红点 / 小蓝点
+// ======================================================
 
-/*
- * 合并同一个圆可能产生的碎片
- */
+function filterNormalBP(
+  bankers,
+  players
+){
+
+  const bp =
+    [
+      ...bankers,
+      ...players
+    ];
+
+  if(bp.length < 3){
+
+    return {
+      bankers,
+      players
+    };
+  }
+
+
+  const sizes =
+    bp
+      .map(
+        p =>
+          Math.max(
+            p.width,
+            p.height
+          )
+      )
+      .sort(
+        (a,b)=>a-b
+      );
+
+
+  // 不让最小的小红点影响正常圆尺寸
+  const start =
+    Math.floor(
+      sizes.length * 0.35
+    );
+
+
+  const normalSizes =
+    sizes.slice(start);
+
+
+  const normalSize =
+
+    normalSizes[
+      Math.floor(
+        normalSizes.length / 2
+      )
+    ]
+
+    ||
+
+    sizes[
+      Math.floor(
+        sizes.length / 2
+      )
+    ];
+
+
+  // 正常庄闲圆尺寸范围
+  const minSize =
+    normalSize * 0.58;
+
+  const maxSize =
+    normalSize * 1.65;
+
+
+  function valid(p){
+
+    const size =
+      Math.max(
+        p.width,
+        p.height
+      );
+
+    const smallSide =
+      Math.min(
+        p.width,
+        p.height
+      );
+
+
+    // 太小：小红点/小蓝点
+    if(size < minSize)
+      return false;
+
+
+    // 太大：数字、文字、图标
+    if(size > maxSize)
+      return false;
+
+
+    // 太长太扁，不像正常圆
+    if(
+      smallSide / size < 0.58
+    ){
+      return false;
+    }
+
+
+    return true;
+  }
+
+
+  return {
+
+    bankers:
+      bankers.filter(valid),
+
+    players:
+      players.filter(valid)
+
+  };
+}
+
+
+// =========================
+// 合并附近碎片
+// =========================
 
 function mergeNearby(points){
 
@@ -1188,8 +1072,8 @@ function mergeNearby(points){
     points.map(
       p =>
         Math.max(
-          p.width,
-          p.height
+          p.width || 10,
+          p.height || 10
         )
     );
 
@@ -1232,7 +1116,6 @@ function mergeNearby(points){
     if(used[i])
       continue;
 
-
     used[i] = true;
 
 
@@ -1240,11 +1123,9 @@ function mergeNearby(points){
       points[i].x *
       points[i].area;
 
-
     let sy =
       points[i].y *
       points[i].area;
-
 
     let area =
       points[i].area;
@@ -1252,7 +1133,6 @@ function mergeNearby(points){
 
     let bestType =
       points[i].type;
-
 
     let bestArea =
       points[i].area;
@@ -1271,7 +1151,6 @@ function mergeNearby(points){
       const dx =
         points[j].x -
         points[i].x;
-
 
       const dy =
         points[j].y -
@@ -1324,13 +1203,11 @@ function mergeNearby(points){
       type:bestType,
 
       x:sx/area,
-
       y:sy/area,
 
       area:area,
 
       diameter:median
-
     });
   }
 
@@ -1339,10 +1216,9 @@ function mergeNearby(points){
 }
 
 
-
-/*
- * 根据X坐标分列
- */
+// =========================
+// 按X坐标分列
+// =========================
 
 function clusterColumns(points){
 
@@ -1352,9 +1228,9 @@ function clusterColumns(points){
 
   const sorted =
     [...points]
-    .sort(
-      (a,b)=>a.x-b.x
-    );
+      .sort(
+        (a,b)=>a.x-b.x
+      );
 
 
   let approxSize = 16;
@@ -1398,7 +1274,6 @@ function clusterColumns(points){
       ){
 
         found = column;
-
         break;
       }
     }
@@ -1408,12 +1283,11 @@ function clusterColumns(points){
 
       found = {
 
-        centerX:point.x,
+        centerX:
+          point.x,
 
         points:[]
-
       };
-
 
       columns.push(found);
     }
@@ -1428,7 +1302,10 @@ function clusterColumns(points){
         (sum,p)=>
           sum+p.x,
         0
-      ) /
+      )
+
+      /
+
       found.points.length;
   });
 
@@ -1443,14 +1320,9 @@ function clusterColumns(points){
 }
 
 
-
-/*
- * 按百家乐珠盘顺序读取：
- *
- * 第1列：上 -> 下
- * 第2列：上 -> 下
- * 第3列：上 -> 下
- */
+// =========================
+// 转换成路单顺序
+// =========================
 
 function roadToSequence(points){
 
@@ -1472,10 +1344,7 @@ function roadToSequence(points){
     );
 
 
-    /*
-     * 一列理论最多6个。
-     */
-
+    // 每列最多6格
     const usable =
       column.points.slice(0,6);
 
@@ -1494,10 +1363,9 @@ function roadToSequence(points){
 }
 
 
-
-/*
- * 识别图片
- */
+// =========================
+// 识别截图
+// =========================
 
 function recognizeRoad(img){
 
@@ -1521,11 +1389,6 @@ function recognizeRoad(img){
       }
     );
 
-
-  /*
-   * 手机性能考虑：
-   * 最大宽度压到900
-   */
 
   const maxWidth = 900;
 
@@ -1560,7 +1423,6 @@ function recognizeRoad(img){
 
 
   canvas.width = w;
-
   canvas.height = h;
 
 
@@ -1590,7 +1452,7 @@ function recognizeRoad(img){
     );
 
 
-  const bankers =
+  let bankers =
     findComponents(
       imageData,
       w,
@@ -1599,7 +1461,7 @@ function recognizeRoad(img){
     );
 
 
-  const players =
+  let players =
     findComponents(
       imageData,
       w,
@@ -1608,7 +1470,7 @@ function recognizeRoad(img){
     );
 
 
-  const ties =
+  let ties =
     findComponents(
       imageData,
       w,
@@ -1616,6 +1478,29 @@ function recognizeRoad(img){
       'T'
     );
 
+
+  // ====================================
+  // 关键修复：
+  // 先过滤掉庄闲的小红点/小蓝点
+  // ====================================
+
+  const filteredBP =
+    filterNormalBP(
+      bankers,
+      players
+    );
+
+
+  bankers =
+    filteredBP.bankers;
+
+
+  players =
+    filteredBP.players;
+
+
+  // T保持原来的识别方式
+  // 因为绿色和有时本身就比较小
 
   let all =
     [
@@ -1629,19 +1514,20 @@ function recognizeRoad(img){
     mergeNearby(all);
 
 
-  /*
-   * 去掉异常大的色块
-   */
+  // ====================================
+  // 过滤极端异常面积
+  // ====================================
 
   if(all.length){
 
     const areas =
-      all.map(
-        x=>x.area
-      )
-      .sort(
-        (a,b)=>a-b
-      );
+      all
+        .map(
+          x=>x.area
+        )
+        .sort(
+          (a,b)=>a-b
+        );
 
 
     const medianArea =
@@ -1653,16 +1539,15 @@ function recognizeRoad(img){
 
 
     all =
-      all.filter(p=>
+      all.filter(
+        p =>
+          p.area >
+            medianArea * 0.20
 
-        p.area >
-          medianArea * 0.20
+          &&
 
-        &&
-
-        p.area <
-          medianArea * 5
-
+          p.area <
+            medianArea * 5
       );
   }
 
@@ -1680,15 +1565,13 @@ function recognizeRoad(img){
     width:w,
 
     height:h
-
   };
 }
 
 
-
-/*
- * 自动导入识别结果
- */
+// =========================
+// 导入识别结果
+// =========================
 
 function importRecognizedSequence(
   sequence
@@ -1702,15 +1585,10 @@ function importRecognizedSequence(
   }
 
 
-  /*
-   * 截图识别时：
-   * 默认使用截图内容重新建立历史，
-   * 防止重复导入。
-   */
-
+  // T不进入预测历史
   const bpSequence =
     sequence.filter(
-      x=>
+      x =>
         x === 'B' ||
         x === 'P'
     );
@@ -1718,7 +1596,7 @@ function importRecognizedSequence(
 
   const tieCount =
     sequence.filter(
-      x=>x === 'T'
+      x => x === 'T'
     ).length;
 
 
@@ -1728,7 +1606,6 @@ function importRecognizedSequence(
 
 
   renderHistory();
-
 
   updateView();
 
@@ -1744,10 +1621,9 @@ function importRecognizedSequence(
 }
 
 
-
-/*
- * 图片选择事件
- */
+// =========================
+// 图片选择
+// =========================
 
 function setupImageRecognition(){
 
@@ -1780,15 +1656,19 @@ function setupImageRecognition(){
         byId('scanStatus');
 
 
-      if(statusBox)
+      if(statusBox){
+
         statusBox
           .classList
           .remove('hidden');
+      }
 
 
-      if(status)
+      if(status){
+
         status.textContent =
           '正在识别截图，请稍等……';
+      }
 
 
       setButtonsDisabled(true);
@@ -1816,7 +1696,7 @@ function setupImageRecognition(){
           ){
 
             throw new Error(
-              '没有识别到路单。请尽量只截图庄/闲/和圆点区域。'
+              '没有识别到路单，请尽量只截庄/闲/和圆点区域。'
             );
           }
 
@@ -1859,15 +1739,16 @@ function setupImageRecognition(){
               (
                 err.message ||
                 String(err)
-              ) +
+              )
 
-              '\n请把截图裁剪成你刚才发的那种，只保留路单圆点区域。';
+              +
+
+              '\n请尽量只保留路单圆点区域。';
           }
 
         }finally{
 
           setButtonsDisabled(false);
-
 
           URL.revokeObjectURL(url);
         }
@@ -1883,32 +1764,27 @@ function setupImageRecognition(){
             '❌ 图片读取失败，请重新选择截图。';
         }
 
-
         setButtonsDisabled(false);
-
 
         URL.revokeObjectURL(url);
       };
 
 
       img.src = url;
-
     }
   );
 }
 
 
-
-/* =========================
-   使用说明
-   ========================= */
+// =========================
+// 使用说明
+// =========================
 
 window.toggleInstructions =
 function(){
 
   const modal =
     byId('instModal');
-
 
   const text =
     byId('instText');
@@ -1917,27 +1793,28 @@ function(){
   if(text){
 
     text.textContent =
-
 `使用方法：
 
-一、手动方式
-点击 P 或 B 输入开奖结果。
+一、手动输入
+点击P或B输入开奖结果。
 
 二、截图识别
-1. 把百家乐路单截图。
-2. 最好只保留庄、闲、和圆点区域。
+1. 截取百家乐路单。
+2. 建议使用矩形截图，只截大路区域。
 3. 点击“📷 截图识别”。
 4. 选择截图。
 5. 系统自动识别：
    红色 = B
    蓝色 = P
-   绿色 = 和
-6. 每列从上往下读取，一列最多6个，然后读取右边下一列。
-7. 识别出的B/P会直接进入预测系统。
-8. 和会识别出来，但不会加入B/P预测序列。
+   绿色 = T
+6. 每列从上往下读取，一列最多6个。
+7. 再读取右边下一列。
+8. B/P自动进入预测系统。
+9. T会识别，但不会进入B/P预测历史。
 
-截图越接近你提供的样图，识别越稳定。`;
-
+本版本已经增加：
+小红点、小蓝点过滤，
+减少凭空多出B/P的问题。`;
   }
 
 
@@ -1950,13 +1827,11 @@ function(){
 };
 
 
-
 window.closeInstructions =
 function(){
 
   const modal =
     byId('instModal');
-
 
   if(modal){
 
@@ -1967,10 +1842,9 @@ function(){
 };
 
 
-
-/* =========================
-   初始化
-   ========================= */
+// =========================
+// 初始化
+// =========================
 
 document.addEventListener(
   'DOMContentLoaded',
@@ -1978,16 +1852,12 @@ document.addEventListener(
 
     renderHistory();
 
-
     showTextOnly(
       '就绪：可手动输入B/P，也可以点击“📷 截图识别”直接导入路单。'
     );
 
-
     updateView();
 
-
     setupImageRecognition();
-
   }
 );
