@@ -16,10 +16,8 @@ const LOOP_GROUPS =
       GROUPS.slice(0, 1)
     );
 
-
 let gameHistory = [];
 let waiting = false;
-
 
 /*
   phase:
@@ -29,18 +27,15 @@ let waiting = false;
 */
 let phase = 0;
 
-
 /* phase 0 */
 let matchIdx = 0;
 let completedAtRealHand = 0;
 let phase0Cursor = 0;
 
-
 /* phase 1 */
 let gateStep = 0;
 let gateHits = 0;
 let lastGateLine = "";
-
 
 /* phase 2 */
 let loopGroupIdx = 0;
@@ -164,7 +159,6 @@ function renderHistory() {
 
   recordDisplay.innerHTML = '';
 
-
   gameHistory.forEach(type => {
 
     const item =
@@ -175,8 +169,7 @@ function renderHistory() {
     item.className =
       `record-item ${type.toLowerCase()}`;
 
-    item.textContent =
-      type;
+    item.textContent = type;
 
     recordDisplay.appendChild(
       item
@@ -194,9 +187,6 @@ function renderHistory() {
   }
 
 
-  /*
-    自动显示最新记录
-  */
   requestAnimationFrame(() => {
 
     recordDisplay.scrollTop =
@@ -229,9 +219,6 @@ function settlePrediction(
   realHand
 ) {
 
-  /*
-    第91个B/P开始
-  */
   if (
     realHand <
     STATS_START_HAND
@@ -482,10 +469,6 @@ function nextPredLetter() {
 
 function advanceAfterInput(actual) {
 
-  /* =====================
-     phase 0
-     ===================== */
-
   if (phase === 0) {
 
     const need =
@@ -542,10 +525,6 @@ function advanceAfterInput(actual) {
     return;
   }
 
-
-  /* =====================
-     phase 1
-     ===================== */
 
   if (phase === 1) {
 
@@ -608,20 +587,12 @@ function advanceAfterInput(actual) {
   }
 
 
-  /* =====================
-     phase 2
-     ===================== */
-
   if (phase === 2) {
 
     const realHand =
       gameHistory.length;
 
 
-    /*
-      loopPos还没推进，
-      这里就是本手预测
-    */
     const predicted =
       nextPredLetter();
 
@@ -864,7 +835,6 @@ function() {
 
 /* =====================================================
    Reset
-   唯一清零
    ===================================================== */
 
 window.resetGame =
@@ -1026,7 +996,6 @@ function classifyColor(
   }
 
 
-  /* 红 = B */
   if (
     hsv.h <= 22 ||
     hsv.h >= 338
@@ -1035,7 +1004,6 @@ function classifyColor(
   }
 
 
-  /* 蓝 = P */
   if (
     hsv.h >= 185 &&
     hsv.h <= 250
@@ -1044,7 +1012,6 @@ function classifyColor(
   }
 
 
-  /* 绿 = T */
   if (
     hsv.h >= 70 &&
     hsv.h <= 170
@@ -1310,6 +1277,7 @@ function findColorComponents(
       height:bh,
 
       area
+
     });
   }
 
@@ -2425,7 +2393,7 @@ function recognizeRoad(img) {
 
 /* =====================================================
    截图导入
-   没有Reset就一直追加
+   没按Reset就一直追加
    ===================================================== */
 
 function importRecognizedSequence(
@@ -2471,10 +2439,6 @@ function importRecognizedSequence(
     gameHistory.length;
 
 
-  /*
-    本次识别多少B/P，
-    就全部追加多少。
-  */
   bpSequence.forEach(
     result => {
 
@@ -2713,13 +2677,10 @@ function() {
 
 总历史 = 95手。
 
-
 4. 只有点击 Reset 才会清零。
-
 
 5. T 会被识别，
    但不进入 B/P 预测历史。
-
 
 6. 第91个 B/P 开始统计：
 
@@ -2732,24 +2693,20 @@ function() {
 最大连对
 最大连错
 
-
 7. 预测正确：
 
 当前连对 +1
 当前连错归0
-
 
 8. 预测错误：
 
 当前连错 +1
 当前连对归0
 
-
 9. Back：
 
 删除最后一个 B/P，
 并按照剩余历史重新计算。
-
 
 截图颜色：
 
