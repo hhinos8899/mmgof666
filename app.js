@@ -1,20 +1,30 @@
 /* =====================================================
    AI 预测系统
-   app.js 最终稳定版
+   app.js V12 稳定版
 
-   截图识别：
+   截图识别原则：
+
    红圈 = B
    蓝圈 = P
-   绿色全部忽略
 
-   核心原则：
-   1. 不识别和
-   2. 不自动补空格
-   3. 不自动补弱格
-   4. 不按固定6格强行增加手数
-   5. 只计算图片里真实检测到的红/蓝标记
-   6. 同一竖列的颜色一致性，只辅助判断 B/P
-   7. 如果结构明显异常，直接报错，不乱导入
+   绿色完全忽略
+   不识别和
+   不统计和
+
+   本版重点修复：
+
+   1. 同一个圆被绿色斜杠切开后，
+      红/蓝碎片先重新合并，
+      防止一个圆被识别成两手。
+
+   2. 过滤图片最左/最右边缘的小碎片，
+      防止开头凭空多一个P/B。
+
+   3. 不自动补空格。
+   4. 不自动补弱格。
+   5. 不根据整列强行增加手数。
+   6. 同一竖列颜色只用于判断B/P。
+   7. 真正检测到一个圆才算一手。
    ===================================================== */
 
 
@@ -111,6 +121,7 @@ let maxLoseStreak = 0;
    ===================================================== */
 
 function byId(id) {
+
   return document.getElementById(id);
 }
 
@@ -122,10 +133,15 @@ function byId(id) {
 function setButtonsDisabled(disabled) {
 
   const buttons =
-    document.querySelectorAll('.btn');
+    document.querySelectorAll(
+      '.btn'
+    );
+
 
   buttons.forEach(btn => {
-    btn.disabled = disabled;
+
+    btn.disabled =
+      disabled;
   });
 }
 
@@ -139,11 +155,15 @@ function setLabelAI() {
   const label =
     byId('resultLabel');
 
+
   if (!label) {
     return;
   }
 
-  label.textContent = 'AI';
+
+  label.textContent =
+    'AI';
+
 
   label.classList.remove(
     'player',
@@ -157,16 +177,21 @@ function setLabelSide(side) {
   const label =
     byId('resultLabel');
 
+
   if (!label) {
     return;
   }
 
-  label.textContent = side;
+
+  label.textContent =
+    side;
+
 
   label.classList.remove(
     'player',
     'banker'
   );
+
 
   label.classList.add(
     side === 'B'
@@ -180,11 +205,17 @@ function showTextOnly(msg) {
 
   setLabelAI();
 
+
   const text =
-    byId('predictionText');
+    byId(
+      'predictionText'
+    );
+
 
   if (text) {
-    text.textContent = msg;
+
+    text.textContent =
+      msg;
   }
 }
 
@@ -196,32 +227,50 @@ function showTextOnly(msg) {
 function renderHistory() {
 
   const recordDisplay =
-    byId('recordDisplay');
+    byId(
+      'recordDisplay'
+    );
+
 
   if (!recordDisplay) {
     return;
   }
 
-  recordDisplay.innerHTML = '';
+
+  recordDisplay.innerHTML =
+    '';
+
 
   gameHistory.forEach(type => {
 
     const item =
-      document.createElement('div');
+      document.createElement(
+        'div'
+      );
+
 
     item.className =
       `record-item ${type.toLowerCase()}`;
 
-    item.textContent = type;
 
-    recordDisplay.appendChild(item);
+    item.textContent =
+      type;
+
+
+    recordDisplay.appendChild(
+      item
+    );
   });
 
 
   const count =
-    byId('historyCount');
+    byId(
+      'historyCount'
+    );
+
 
   if (count) {
+
     count.textContent =
       `${gameHistory.length}手`;
   }
@@ -236,7 +285,7 @@ function renderHistory() {
 
 
 /* =====================================================
-   预测统计
+   统计清零
    ===================================================== */
 
 function resetPredictionStats() {
@@ -255,6 +304,10 @@ function resetPredictionStats() {
 }
 
 
+/* =====================================================
+   统计预测
+   ===================================================== */
+
 function settlePrediction(
   actual,
   predicted,
@@ -265,6 +318,7 @@ function settlePrediction(
     realHand <
     STATS_START_HAND
   ) {
+
     return;
   }
 
@@ -273,6 +327,7 @@ function settlePrediction(
     actual !== 'B' &&
     actual !== 'P'
   ) {
+
     return;
   }
 
@@ -281,6 +336,7 @@ function settlePrediction(
     predicted !== 'B' &&
     predicted !== 'P'
   ) {
+
     return;
   }
 
@@ -327,11 +383,17 @@ function settlePrediction(
 }
 
 
+/* =====================================================
+   命中率
+   ===================================================== */
+
 function getHitRate() {
 
   if (!predictionTotal) {
+
     return '--';
   }
+
 
   return (
     (
@@ -344,6 +406,10 @@ function getHitRate() {
   );
 }
 
+
+/* =====================================================
+   更新统计显示
+   ===================================================== */
 
 function renderPredictionStats() {
 
@@ -378,41 +444,56 @@ function renderPredictionStats() {
 
 
   if (totalEl) {
+
     totalEl.textContent =
       predictionTotal;
   }
 
+
   if (hitsEl) {
+
     hitsEl.textContent =
       predictionHits;
   }
 
+
   if (missesEl) {
+
     missesEl.textContent =
       misses;
   }
 
+
   if (winEl) {
+
     winEl.textContent =
       currentWinStreak;
   }
 
+
   if (loseEl) {
+
     loseEl.textContent =
       currentLoseStreak;
   }
 
+
   if (maxWinEl) {
+
     maxWinEl.textContent =
       maxWinStreak;
   }
 
+
   if (maxLoseEl) {
+
     maxLoseEl.textContent =
       maxLoseStreak;
   }
 
+
   if (rateEl) {
+
     rateEl.textContent =
       getHitRate();
   }
@@ -426,6 +507,7 @@ function renderPredictionStats() {
 function virtualHandFor(realHand) {
 
   if (!completedAtRealHand) {
+
     return null;
   }
 
@@ -442,8 +524,10 @@ function virtualHandFor(realHand) {
   if (phase === 2) {
 
     if (!phase2StartRealHand) {
+
       return null;
     }
+
 
     return (
       28 +
@@ -462,7 +546,9 @@ function virtualHandFor(realHand) {
 function fmtHand(realHand) {
 
   const v =
-    virtualHandFor(realHand);
+    virtualHandFor(
+      realHand
+    );
 
 
   if (v === null) {
@@ -505,7 +591,7 @@ function nextPredLetter() {
 
 
 /* =====================================================
-   核心预测推进
+   核心推进
    ===================================================== */
 
 function advanceAfterInput(actual) {
@@ -543,17 +629,22 @@ function advanceAfterInput(actual) {
 
           matchIdx = 0;
 
+
           completedAtRealHand =
             gameHistory.length;
 
+
           phase = 1;
+
 
           gateStep = 0;
 
           gateHits = 0;
 
+
           lastGateLine =
             '✅ 已套完24手｜开始门槛PBP';
+
 
           loopGroupIdx = 0;
 
@@ -563,6 +654,7 @@ function advanceAfterInput(actual) {
         }
       }
     }
+
 
     return;
   }
@@ -581,6 +673,7 @@ function advanceAfterInput(actual) {
 
 
     if (hit) {
+
       gateHits++;
     }
 
@@ -603,6 +696,7 @@ function advanceAfterInput(actual) {
     if (
       gateStep < 3
     ) {
+
       return;
     }
 
@@ -613,8 +707,10 @@ function advanceAfterInput(actual) {
 
       phase = 2;
 
+
       phase2StartRealHand =
         gameHistory.length + 1;
+
 
       loopGroupIdx = 0;
 
@@ -626,6 +722,7 @@ function advanceAfterInput(actual) {
 
       gateHits = 0;
     }
+
 
     return;
   }
@@ -658,6 +755,7 @@ function advanceAfterInput(actual) {
     ) {
 
       loopPos = 0;
+
 
       loopGroupIdx =
         (
@@ -693,6 +791,7 @@ function updateView() {
       `套入24手中｜当前需要 ${need}｜顺序命中，中间允许插`
     );
 
+
     return;
   }
 
@@ -707,7 +806,9 @@ function updateView() {
 
 
     const text =
-      byId('predictionText');
+      byId(
+        'predictionText'
+      );
 
 
     if (text) {
@@ -717,6 +818,7 @@ function updateView() {
         ||
         `门槛PBP｜${fmtHand(upcomingReal)}`;
     }
+
 
     return;
   }
@@ -737,7 +839,9 @@ function updateView() {
 
 
   const text =
-    byId('predictionText');
+    byId(
+      'predictionText'
+    );
 
 
   if (text) {
@@ -752,7 +856,7 @@ function updateView() {
 
 
 /* =====================================================
-   根据历史重新计算
+   根据历史重算
    ===================================================== */
 
 function recomputeFromHistory(arr) {
@@ -806,6 +910,7 @@ window.recordResult =
 function(type) {
 
   if (waiting) {
+
     return;
   }
 
@@ -814,18 +919,27 @@ function(type) {
     type !== 'B' &&
     type !== 'P'
   ) {
+
     return;
   }
 
 
   waiting = true;
 
-  setButtonsDisabled(true);
+
+  setButtonsDisabled(
+    true
+  );
 
 
-  gameHistory.push(type);
+  gameHistory.push(
+    type
+  );
 
-  advanceAfterInput(type);
+
+  advanceAfterInput(
+    type
+  );
 
 
   renderHistory();
@@ -837,7 +951,10 @@ function(type) {
 
   waiting = false;
 
-  setButtonsDisabled(false);
+
+  setButtonsDisabled(
+    false
+  );
 };
 
 
@@ -849,11 +966,13 @@ window.undoLastMove =
 function() {
 
   if (waiting) {
+
     return;
   }
 
 
   if (!gameHistory.length) {
+
     return;
   }
 
@@ -865,7 +984,9 @@ function() {
   old.pop();
 
 
-  recomputeFromHistory(old);
+  recomputeFromHistory(
+    old
+  );
 
 
   renderHistory();
@@ -884,11 +1005,14 @@ window.resetGame =
 function() {
 
   if (waiting) {
+
     return;
   }
 
 
-  recomputeFromHistory([]);
+  recomputeFromHistory(
+    []
+  );
 
 
   renderHistory();
@@ -899,14 +1023,18 @@ function() {
 
 
   const statusBox =
-    byId('scanStatusBox');
+    byId(
+      'scanStatusBox'
+    );
 
 
   if (statusBox) {
 
     statusBox
       .classList
-      .add('hidden');
+      .add(
+        'hidden'
+      );
   }
 };
 
@@ -919,15 +1047,20 @@ window.openScreenshot =
 function() {
 
   const input =
-    byId('imageInput');
+    byId(
+      'imageInput'
+    );
 
 
   if (!input) {
+
     return;
   }
 
 
-  input.value = '';
+  input.value =
+    '';
+
 
   input.click();
 };
@@ -937,21 +1070,38 @@ function() {
    RGB -> HSV
    ===================================================== */
 
-function rgbToHSV(r, g, b) {
+function rgbToHSV(
+  r,
+  g,
+  b
+) {
 
   r /= 255;
+
   g /= 255;
+
   b /= 255;
 
 
   const max =
-    Math.max(r, g, b);
+    Math.max(
+      r,
+      g,
+      b
+    );
+
 
   const min =
-    Math.min(r, g, b);
+    Math.min(
+      r,
+      g,
+      b
+    );
+
 
   const d =
-    max - min;
+    max -
+    min;
 
 
   let h = 0;
@@ -972,7 +1122,9 @@ function rgbToHSV(r, g, b) {
           6
         );
 
-    } else if (max === g) {
+    } else if (
+      max === g
+    ) {
 
       h =
         60 *
@@ -998,6 +1150,7 @@ function rgbToHSV(r, g, b) {
 
 
   if (h < 0) {
+
     h += 360;
   }
 
@@ -1009,8 +1162,11 @@ function rgbToHSV(r, g, b) {
 
 
   return {
+
     h,
+
     s,
+
     v:max
   };
 }
@@ -1019,11 +1175,9 @@ function rgbToHSV(r, g, b) {
 /* =====================================================
    颜色分类
 
-   只识别：
-   B = 红
-   P = 蓝
+   只认红、蓝。
 
-   绿色全部忽略
+   绿色完全忽略。
    ===================================================== */
 
 function classifyColor(
@@ -1033,7 +1187,10 @@ function classifyColor(
   a = 255
 ) {
 
-  if (a < 100) {
+  if (
+    a < 100
+  ) {
+
     return null;
   }
 
@@ -1050,26 +1207,29 @@ function classifyColor(
     hsv.s < 0.23 ||
     hsv.v < 0.24
   ) {
+
     return null;
   }
 
 
-  /* 红 */
+  /* 红 = B */
 
   if (
     hsv.h <= 30 ||
     hsv.h >= 330
   ) {
+
     return 'B';
   }
 
 
-  /* 蓝 */
+  /* 蓝 = P */
 
   if (
     hsv.h >= 175 &&
     hsv.h <= 262
   ) {
+
     return 'P';
   }
 
@@ -1079,7 +1239,7 @@ function classifyColor(
 
 
 /* =====================================================
-   建立单颜色Mask
+   红蓝Mask
    ===================================================== */
 
 function createSideMasks(
@@ -1094,10 +1254,15 @@ function createSideMasks(
 
 
   const red =
-    new Uint8Array(total);
+    new Uint8Array(
+      total
+    );
+
 
   const blue =
-    new Uint8Array(total);
+    new Uint8Array(
+      total
+    );
 
 
   const data =
@@ -1123,7 +1288,9 @@ function createSideMasks(
       );
 
 
-    if (type === 'B') {
+    if (
+      type === 'B'
+    ) {
 
       red[i] = 1;
 
@@ -1137,14 +1304,16 @@ function createSideMasks(
 
 
   return {
+
     red,
+
     blue
   };
 }
 
 
 /* =====================================================
-   找连通块
+   找单颜色连通块
    ===================================================== */
 
 function findMaskComponents(
@@ -1160,20 +1329,26 @@ function findMaskComponents(
 
 
   const visited =
-    new Uint8Array(total);
+    new Uint8Array(
+      total
+    );
 
-
-  const stack = [];
 
   const result = [];
 
+  const stack = [];
+
+
+  /*
+    很小的噪声先过滤。
+  */
 
   const minArea =
     Math.max(
       3,
       Math.floor(
         total *
-        0.0000015
+        0.0000012
       )
     );
 
@@ -1188,15 +1363,20 @@ function findMaskComponents(
       !mask[start] ||
       visited[start]
     ) {
+
       continue;
     }
 
 
     visited[start] = 1;
 
+
     stack.length = 0;
 
-    stack.push(start);
+
+    stack.push(
+      start
+    );
 
 
     let area = 0;
@@ -1206,11 +1386,13 @@ function findMaskComponents(
     let sumY = 0;
 
 
-    let minX = width;
+    let minX =
+      width;
 
     let maxX = 0;
 
-    let minY = height;
+    let minY =
+      height;
 
     let maxY = 0;
 
@@ -1272,11 +1454,8 @@ function findMaskComponents(
 
 
       /*
-        8方向连接。
-
-        对斜线遮挡后的圆弧
-        会比4方向更稳定。
-      */
+        8方向连接
+  */
 
       for (
         let oy = -1;
@@ -1294,12 +1473,14 @@ function findMaskComponents(
             ox === 0 &&
             oy === 0
           ) {
+
             continue;
           }
 
 
           const nx =
             x + ox;
+
 
           const ny =
             y + oy;
@@ -1311,6 +1492,7 @@ function findMaskComponents(
             ny < 0 ||
             ny >= height
           ) {
+
             continue;
           }
 
@@ -1326,9 +1508,13 @@ function findMaskComponents(
             !visited[ni]
           ) {
 
-            visited[ni] = 1;
+            visited[ni] =
+              1;
 
-            stack.push(ni);
+
+            stack.push(
+              ni
+            );
           }
         }
       }
@@ -1339,6 +1525,7 @@ function findMaskComponents(
       area <
       minArea
     ) {
+
       continue;
     }
 
@@ -1359,6 +1546,7 @@ function findMaskComponents(
       bw < 2 ||
       bh < 2
     ) {
+
       continue;
     }
 
@@ -1370,19 +1558,26 @@ function findMaskComponents(
       area,
 
       x:
-        sumX / area,
+        sumX /
+        area,
 
       y:
-        sumY / area,
+        sumY /
+        area,
 
       minX,
+
       maxX,
+
       minY,
+
       maxY,
 
-      width:bw,
+      width:
+        bw,
 
-      height:bh
+      height:
+        bh
     });
   }
 
@@ -1397,7 +1592,10 @@ function findMaskComponents(
 
 function median(arr) {
 
-  if (!arr.length) {
+  if (
+    !arr.length
+  ) {
+
     return 0;
   }
 
@@ -1422,13 +1620,22 @@ function median(arr) {
     2
   ) {
 
-    return values[middle];
+    return (
+      values[
+        middle
+      ]
+    );
   }
 
 
   return (
-    values[middle - 1] +
-    values[middle]
+    values[
+      middle - 1
+    ]
+    +
+    values[
+      middle
+    ]
   )
   /
   2;
@@ -1436,7 +1643,7 @@ function median(arr) {
 
 
 /* =====================================================
-   估算正常圆直径
+   估算正常圆大小
    ===================================================== */
 
 function estimateMarkerSize(
@@ -1446,12 +1653,14 @@ function estimateMarkerSize(
   const sizes =
     components
       .map(c =>
+
         Math.max(
           c.width,
           c.height
         )
       )
       .filter(size =>
+
         size >= 3
       )
       .sort(
@@ -1460,14 +1669,18 @@ function estimateMarkerSize(
       );
 
 
-  if (!sizes.length) {
+  if (
+    !sizes.length
+  ) {
+
     return 12;
   }
 
 
   /*
-    取偏大的那部分，
-    避免被小碎片拉低。
+    去掉最小的碎片，
+    防止绿线切开后的细碎部分
+    把圆大小估小。
   */
 
   const start =
@@ -1478,43 +1691,125 @@ function estimateMarkerSize(
 
 
   const usable =
-    sizes.slice(start);
+    sizes.slice(
+      start
+    );
 
 
   return (
-    median(usable) ||
-    median(sizes) ||
+    median(usable)
+    ||
+    median(sizes)
+    ||
     12
   );
 }
 
 
 /* =====================================================
-   过滤明显噪点
+   估算正常主体面积
+   ===================================================== */
 
-   注意：
-   这里允许圆被绿线切断后的碎片存在。
+function estimateMarkerArea(
+  components
+) {
 
-   后面还会重新合并。
+  const areas =
+    components
+      .map(c =>
+        c.area
+      )
+      .filter(a =>
+        a > 0
+      )
+      .sort(
+        (a, b) =>
+          a - b
+      );
+
+
+  if (
+    !areas.length
+  ) {
+
+    return 10;
+  }
+
+
+  /*
+    使用较大的60%区域，
+    避免碎片把正常面积拉低。
+  */
+
+  const start =
+    Math.floor(
+      areas.length *
+      0.40
+    );
+
+
+  const usable =
+    areas.slice(
+      start
+    );
+
+
+  return (
+    median(usable)
+    ||
+    median(areas)
+    ||
+    10
+  );
+}
+
+
+/* =====================================================
+   初步过滤噪声
+
+   本次新增：
+   图片边缘的小碎片需要更严格过滤。
    ===================================================== */
 
 function filterComponents(
   components,
-  markerSize
+  markerSize,
+  markerArea,
+  width,
+  height
 ) {
 
-  const minArea =
+  const normalMinArea =
     Math.max(
       3,
-      markerSize *
-      markerSize *
-      0.018
+      markerArea *
+      0.10
     );
+
+
+  /*
+    贴边碎片要求更高。
+
+    就是为了防止最左边
+    莫名其妙多一个P。
+  */
+
+  const edgeMinArea =
+    Math.max(
+      normalMinArea,
+      markerArea *
+      0.30
+    );
+
+
+  const edgeZone =
+    markerSize *
+    0.45;
 
 
   const maxSize =
     markerSize *
-    1.9;
+    2.0;
 
 
   return components.filter(c => {
@@ -1526,18 +1821,95 @@ function filterComponents(
       );
 
 
+    const small =
+      Math.min(
+        c.width,
+        c.height
+      );
+
+
     if (
       big >
       maxSize
     ) {
+
       return false;
+    }
+
+
+    /*
+      太细长，
+      不像圆弧主体。
+  */
+
+    if (
+      small /
+      Math.max(
+        big,
+        1
+      )
+      <
+      0.12
+    ) {
+
+      return false;
+    }
+
+
+    const nearLeft =
+      c.minX <
+      edgeZone;
+
+
+    const nearRight =
+      c.maxX >
+      width -
+      edgeZone;
+
+
+    /*
+      靠最左、最右边时，
+      必须有更大的有效面积。
+
+      小小一块蓝色边缘
+      不允许成为一手。
+  */
+
+    if (
+      nearLeft ||
+      nearRight
+    ) {
+
+      if (
+        c.area <
+        edgeMinArea
+      ) {
+
+        return false;
+      }
+
+
+      /*
+        贴边并且特别窄，
+        也当作残片过滤。
+  */
+
+      if (
+        c.width <
+        markerSize *
+        0.26
+      ) {
+
+        return false;
+      }
     }
 
 
     if (
       c.area <
-      minArea
+      normalMinArea
     ) {
+
       return false;
     }
 
@@ -1548,9 +1920,385 @@ function filterComponents(
 
 
 /* =====================================================
-   数值聚类
+   把同一个圆被切开的碎片合并
 
-   用于列位置和行位置。
+   本版非常关键。
+
+   绿色斜杠可能把一个蓝圈/红圈
+   切成左右两个碎片。
+
+   如果不合并，
+   就可能出现：
+   一局 = 两手。
+
+   现在先把同一横向位置、
+   同一高度附近的碎片合成一个marker。
+   ===================================================== */
+
+function mergeMarkerFragments(
+  components,
+  markerSize
+) {
+
+  const used =
+    new Uint8Array(
+      components.length
+    );
+
+
+  const merged = [];
+
+
+  /*
+    同一圆碎片：
+
+    Y必须很接近；
+    X可以相对宽一些，
+    因为绿斜线可能把圆左右切开。
+  */
+
+  const maxDx =
+    markerSize *
+    1.05;
+
+
+  const maxDy =
+    markerSize *
+    0.42;
+
+
+  for (
+    let i = 0;
+    i < components.length;
+    i++
+  ) {
+
+    if (
+      used[i]
+    ) {
+
+      continue;
+    }
+
+
+    const queue =
+      [i];
+
+
+    used[i] = 1;
+
+
+    const group = [];
+
+
+    while (
+      queue.length
+    ) {
+
+      const index =
+        queue.shift();
+
+
+      const current =
+        components[index];
+
+
+      group.push(
+        current
+      );
+
+
+      for (
+        let j = 0;
+        j < components.length;
+        j++
+      ) {
+
+        if (
+          used[j]
+        ) {
+
+          continue;
+        }
+
+
+        const other =
+          components[j];
+
+
+        /*
+          同一个真实圆的碎片
+          应该主体颜色一致。
+
+          红碎片不和蓝碎片合并。
+  */
+
+        if (
+          other.side !==
+          current.side
+        ) {
+
+          continue;
+        }
+
+
+        const dx =
+          Math.abs(
+            other.x -
+            current.x
+          );
+
+
+        const dy =
+          Math.abs(
+            other.y -
+            current.y
+          );
+
+
+        if (
+          dx <= maxDx &&
+          dy <= maxDy
+        ) {
+
+          used[j] = 1;
+
+          queue.push(j);
+        }
+      }
+    }
+
+
+    let area = 0;
+
+    let weightedX = 0;
+
+    let weightedY = 0;
+
+
+    let minX =
+      Infinity;
+
+    let maxX =
+      -Infinity;
+
+    let minY =
+      Infinity;
+
+    let maxY =
+      -Infinity;
+
+
+    group.forEach(item => {
+
+      area +=
+        item.area;
+
+
+      weightedX +=
+        item.x *
+        item.area;
+
+
+      weightedY +=
+        item.y *
+        item.area;
+
+
+      minX =
+        Math.min(
+          minX,
+          item.minX
+        );
+
+
+      maxX =
+        Math.max(
+          maxX,
+          item.maxX
+        );
+
+
+      minY =
+        Math.min(
+          minY,
+          item.minY
+        );
+
+
+      maxY =
+        Math.max(
+          maxY,
+          item.maxY
+        );
+    });
+
+
+    if (
+      area <= 0
+    ) {
+
+      continue;
+    }
+
+
+    merged.push({
+
+      side:
+        group[0].side,
+
+      area,
+
+      x:
+        weightedX /
+        area,
+
+      y:
+        weightedY /
+        area,
+
+      minX,
+
+      maxX,
+
+      minY,
+
+      maxY,
+
+      width:
+        maxX -
+        minX +
+        1,
+
+      height:
+        maxY -
+        minY +
+        1
+    });
+  }
+
+
+  return merged;
+}
+
+
+/* =====================================================
+   再过滤一次合并后的marker
+
+   防止边缘一个小碎片
+   通过第一次过滤后仍被当成手数。
+   ===================================================== */
+
+function filterMergedMarkers(
+  markers,
+  markerSize,
+  width
+) {
+
+  if (
+    !markers.length
+  ) {
+
+    return [];
+  }
+
+
+  const areas =
+    markers
+      .map(x =>
+        x.area
+      )
+      .sort(
+        (a, b) =>
+          a - b
+      );
+
+
+  const typicalArea =
+    median(
+      areas.slice(
+        Math.floor(
+          areas.length *
+          0.30
+        )
+      )
+    )
+    ||
+    median(areas);
+
+
+  const edgeZone =
+    markerSize *
+    0.55;
+
+
+  return markers.filter(marker => {
+
+    /*
+      普通位置：
+      允许圆被绿线切掉较大一部分。
+  */
+
+    if (
+      marker.area <
+      typicalArea *
+      0.16
+    ) {
+
+      return false;
+    }
+
+
+    const nearLeft =
+      marker.x <
+      edgeZone;
+
+
+    const nearRight =
+      marker.x >
+      width -
+      edgeZone;
+
+
+    /*
+      最左最右更严格。
+
+      专门防止开头多一个P/B。
+  */
+
+    if (
+      nearLeft ||
+      nearRight
+    ) {
+
+      if (
+        marker.area <
+        typicalArea *
+        0.42
+      ) {
+
+        return false;
+      }
+
+
+      if (
+        marker.width <
+        markerSize *
+        0.35
+      ) {
+
+        return false;
+      }
+    }
+
+
+    return true;
+  });
+}
+
+
+/* =====================================================
+   数字聚类
    ===================================================== */
 
 function clusterNumbers(
@@ -1558,6 +2306,14 @@ function clusterNumbers(
   getValue,
   tolerance
 ) {
+
+  if (
+    !items.length
+  ) {
+
+    return [];
+  }
+
 
   const sorted =
     [...items]
@@ -1580,6 +2336,7 @@ function clusterNumbers(
     let best =
       null;
 
+
     let bestDistance =
       Infinity;
 
@@ -1594,12 +2351,15 @@ function clusterNumbers(
 
 
       if (
-        distance <= tolerance &&
-        distance < bestDistance
+        distance <=
+        tolerance &&
+        distance <
+        bestDistance
       ) {
 
         best =
           group;
+
 
         bestDistance =
           distance;
@@ -1611,16 +2371,21 @@ function clusterNumbers(
 
       groups.push({
 
-        center:value,
+        center:
+          value,
 
-        items:[item]
+        items:
+          [item]
       });
+
 
       return;
     }
 
 
-    best.items.push(item);
+    best.items.push(
+      item
+    );
 
 
     let weightTotal = 0;
@@ -1665,142 +2430,37 @@ function clusterNumbers(
 
 
 /* =====================================================
-   把一个竖列里的碎片
-   按Y方向合并为真实圆
+   按真实圆建立竖列
 
-   一个合并后的cell只算1手。
-   ===================================================== */
-
-function buildCellsForColumn(
-  column,
-  markerSize
-) {
-
-  const yTolerance =
-    Math.max(
-      4,
-      markerSize *
-      0.70
-    );
-
-
-  const rows =
-    clusterNumbers(
-      column.items,
-      item => item.y,
-      yTolerance
-    );
-
-
-  const cells = [];
-
-
-  rows.forEach(row => {
-
-    let redArea = 0;
-
-    let blueArea = 0;
-
-    let totalArea = 0;
-
-    let weightedX = 0;
-
-    let weightedY = 0;
-
-
-    row.items.forEach(item => {
-
-      totalArea +=
-        item.area;
-
-
-      weightedX +=
-        item.x *
-        item.area;
-
-
-      weightedY +=
-        item.y *
-        item.area;
-
-
-      if (
-        item.side === 'B'
-      ) {
-
-        redArea +=
-          item.area;
-
-      } else {
-
-        blueArea +=
-          item.area;
-      }
-    });
-
-
-    if (
-      totalArea <= 0
-    ) {
-      return;
-    }
-
-
-    cells.push({
-
-      x:
-        weightedX /
-        totalArea,
-
-      y:
-        weightedY /
-        totalArea,
-
-      area:
-        totalArea,
-
-      redArea,
-
-      blueArea
-    });
-  });
-
-
-  cells.sort(
-    (a, b) =>
-      a.y -
-      b.y
-  );
-
-
-  return cells;
-}
-
-
-/* =====================================================
-   构建真实竖列
-
-   不生成任何不存在的列。
-   只根据真实红蓝碎片聚类。
+   同列只决定颜色，
+   不补空格。
    ===================================================== */
 
 function buildRealColumns(
-  components,
+  markers,
   markerSize
 ) {
 
+  /*
+    相同竖列X位置应接近。
+
+    这里比旧版收紧，
+    防止两个相邻列误并。
+  */
+
   const xTolerance =
     Math.max(
-      4,
+      3,
       markerSize *
-      0.70
+      0.46
     );
 
 
   const rawColumns =
     clusterNumbers(
-      components,
-      item => item.x,
+      markers,
+      item =>
+        item.x,
       xTolerance
     );
 
@@ -1810,26 +2470,152 @@ function buildRealColumns(
 
   rawColumns.forEach(group => {
 
-    const cells =
-      buildCellsForColumn(
-        group,
-        markerSize
-      );
+    /*
+      同一竖列按照Y排序。
+  */
+
+    const sorted =
+      [...group.items]
+        .sort(
+          (a, b) =>
+            a.y -
+            b.y
+        );
 
 
-    if (!cells.length) {
+    /*
+      防止同一个真实圆
+      因为残余碎片仍重复。
+
+      Y特别近的两个marker再合并一次。
+  */
+
+    const cells = [];
+
+
+    const yMerge =
+      markerSize *
+      0.48;
+
+
+    sorted.forEach(marker => {
+
+      const last =
+        cells[
+          cells.length - 1
+        ];
+
+
+      if (
+        last &&
+        Math.abs(
+          marker.y -
+          last.y
+        )
+        <=
+        yMerge
+      ) {
+
+        /*
+          同一位置重复marker，
+          合并成一手。
+  */
+
+        const totalArea =
+          last.area +
+          marker.area;
+
+
+        last.x =
+          (
+            last.x *
+            last.area
+            +
+            marker.x *
+            marker.area
+          )
+          /
+          totalArea;
+
+
+        last.y =
+          (
+            last.y *
+            last.area
+            +
+            marker.y *
+            marker.area
+          )
+          /
+          totalArea;
+
+
+        last.area =
+          totalArea;
+
+
+        last.redArea +=
+          marker.side === 'B'
+            ?
+            marker.area
+            :
+            0;
+
+
+        last.blueArea +=
+          marker.side === 'P'
+            ?
+            marker.area
+            :
+            0;
+
+
+        return;
+      }
+
+
+      cells.push({
+
+        x:
+          marker.x,
+
+        y:
+          marker.y,
+
+        area:
+          marker.area,
+
+        redArea:
+          marker.side === 'B'
+            ?
+            marker.area
+            :
+            0,
+
+        blueArea:
+          marker.side === 'P'
+            ?
+            marker.area
+            :
+            0
+      });
+    });
+
+
+    if (
+      !cells.length
+    ) {
+
       return;
     }
 
 
     /*
-      一竖排正常最多6个结果。
+      一列最多6格。
 
-      如果超过6个，
-      说明这一列识别结构已经异常。
-
-      不允许继续硬导入。
-    */
+      超过6说明定位异常，
+      宁可报错也不乱灌数据。
+  */
 
     if (
       cells.length >
@@ -1837,7 +2623,7 @@ function buildRealColumns(
     ) {
 
       throw new Error(
-        '识别到某一竖排超过6手，请把截图只裁到路单区域后重新识别'
+        '某一竖排识别超过6手，请重新截取完整路单区域'
       );
     }
 
@@ -1852,21 +2638,10 @@ function buildRealColumns(
       redArea +=
         cell.redArea;
 
+
       blueArea +=
         cell.blueArea;
     });
-
-
-    const totalColor =
-      redArea +
-      blueArea;
-
-
-    if (
-      totalColor <= 0
-    ) {
-      return;
-    }
 
 
     const dominant =
@@ -1883,41 +2658,40 @@ function buildRealColumns(
       );
 
 
-    /*
-      如果一列红蓝几乎一样多，
-      说明很可能两个相邻列被错误合并。
+    if (
+      dominant <= 0
+    ) {
 
-      宁愿提示重新截图，
-      不乱导入。
-    */
+      return;
+    }
+
+
+    /*
+      如果同列红蓝太接近，
+      不要乱猜。
+  */
 
     if (
       weak > 0 &&
       dominant <
       weak *
-      1.12
+      1.18
     ) {
 
       throw new Error(
-        '有一竖排红蓝判断不清，请保持截图清晰后重新识别'
+        '有一竖排红蓝判断不清，请换清晰截图重新识别'
       );
     }
 
 
     const side =
-      redArea >= blueArea
-        ? 'B'
-        : 'P';
+      redArea >=
+      blueArea
+        ?
+        'B'
+        :
+        'P';
 
-
-    /*
-      同列规则只纠正颜色。
-
-      cells.length是多少，
-      就只算多少手。
-
-      不补任何空格。
-    */
 
     columns.push({
 
@@ -1943,12 +2717,74 @@ function buildRealColumns(
 
 
 /* =====================================================
-   最终输出顺序
+   最左列额外安全过滤
 
-   左 -> 右
-   每列 上 -> 下
+   专门解决：
 
-   不增加任何T。
+   49局 -> 50局
+   开头多一个P
+
+   如果最左一列只有一个特别弱的圆，
+   并且与下一列距离明显异常小，
+   判断它更可能是同一个圆的残片，
+   删除这个假列。
+   ===================================================== */
+
+function removeFalseFirstColumn(
+  columns,
+  markerSize
+) {
+
+  if (
+    columns.length <
+    2
+  ) {
+
+    return columns;
+  }
+
+
+  const first =
+    columns[0];
+
+
+  const second =
+    columns[1];
+
+
+  const distance =
+    second.x -
+    first.x;
+
+
+  /*
+    正常相邻两列中心距离
+    不会明显小于圆直径。
+
+    如果第一列和第二列靠得过近，
+    第一列又只有一个结果，
+    很可能就是碎片被拆成假列。
+  */
+
+  if (
+    first.cells.length === 1 &&
+    distance <
+    markerSize *
+    0.78
+  ) {
+
+    return columns.slice(
+      1
+    );
+  }
+
+
+  return columns;
+}
+
+
+/* =====================================================
+   转最终B/P顺序
    ===================================================== */
 
 function columnsToSequence(
@@ -1980,7 +2816,9 @@ function columnsToSequence(
 function recognizeRoad(img) {
 
   const canvas =
-    byId('scanCanvas');
+    byId(
+      'scanCanvas'
+    );
 
 
   if (!canvas) {
@@ -1995,13 +2833,14 @@ function recognizeRoad(img) {
     canvas.getContext(
       '2d',
       {
-        willReadFrequently:true
+        willReadFrequently:
+          true
       }
     );
 
 
   /*
-    尽量保留图片原始清晰度。
+    尽量保留清晰度。
   */
 
   const maxWidth =
@@ -2009,12 +2848,14 @@ function recognizeRoad(img) {
 
 
   let w =
-    img.naturalWidth ||
+    img.naturalWidth
+    ||
     img.width;
 
 
   let h =
-    img.naturalHeight ||
+    img.naturalHeight
+    ||
     img.height;
 
 
@@ -2043,9 +2884,12 @@ function recognizeRoad(img) {
   }
 
 
-  canvas.width = w;
+  canvas.width =
+    w;
 
-  canvas.height = h;
+
+  canvas.height =
+    h;
 
 
   ctx.clearRect(
@@ -2075,7 +2919,8 @@ function recognizeRoad(img) {
 
 
   /*
-    1. 只建立红/蓝Mask
+    1.
+    红蓝Mask
   */
 
   const masks =
@@ -2087,7 +2932,8 @@ function recognizeRoad(img) {
 
 
   /*
-    2. 红蓝分别找真实连通区域
+    2.
+    红、蓝分别寻找区域
   */
 
   const redComponents =
@@ -2126,7 +2972,8 @@ function recognizeRoad(img) {
 
 
   /*
-    3. 估算圆大小
+    3.
+    估算正常圆大小和面积
   */
 
   const markerSize =
@@ -2135,14 +2982,24 @@ function recognizeRoad(img) {
     );
 
 
+  const markerArea =
+    estimateMarkerArea(
+      components
+    );
+
+
   /*
-    4. 去掉明显噪点
+    4.
+    第一次噪点/边缘过滤
   */
 
   components =
     filterComponents(
       components,
-      markerSize
+      markerSize,
+      markerArea,
+      w,
+      h
     );
 
 
@@ -2158,16 +3015,54 @@ function recognizeRoad(img) {
 
 
   /*
-    5. 根据真实标记构建真实列
+    5.
+    合并同一个圆被绿线切开的碎片
 
-    不生成空列。
-    不猜网格。
-    不补格。
+    这是本版主要修复。
   */
 
-  const columns =
-    buildRealColumns(
+  let markers =
+    mergeMarkerFragments(
       components,
+      markerSize
+    );
+
+
+  /*
+    6.
+    合并后再做一次边缘过滤
+  */
+
+  markers =
+    filterMergedMarkers(
+      markers,
+      markerSize,
+      w
+    );
+
+
+  if (
+    markers.length <
+    2
+  ) {
+
+    throw new Error(
+      '有效B/P圆太少'
+    );
+  }
+
+
+  /*
+    7.
+    按真实圆建立真实列。
+
+    不猜空列。
+    不补空格。
+  */
+
+  let columns =
+    buildRealColumns(
+      markers,
       markerSize
     );
 
@@ -2183,7 +3078,22 @@ function recognizeRoad(img) {
 
 
   /*
-    6. 转成最终B/P顺序
+    8.
+    专门过滤最左边假列
+
+    解决开头多一个P/B。
+  */
+
+  columns =
+    removeFalseFirstColumn(
+      columns,
+      markerSize
+    );
+
+
+  /*
+    9.
+    转最终顺序
   */
 
   const sequence =
@@ -2203,15 +3113,7 @@ function recognizeRoad(img) {
 
 
   /*
-    防止出现之前那种
-    明显异常的超大数量。
-
-    正常情况下，
-    一张路单截图不应该突然
-    从六七十手变成一百多手。
-
-    这里只作为保护，
-    不修改识别结果。
+    防止明显异常数据直接导入。
   */
 
   if (
@@ -2220,7 +3122,7 @@ function recognizeRoad(img) {
   ) {
 
     throw new Error(
-      `识别结果异常：检测到${sequence.length}手，已停止导入，请检查截图区域`
+      `识别异常：检测到${sequence.length}手，已停止导入`
     );
   }
 
@@ -2237,15 +3139,17 @@ function recognizeRoad(img) {
 
     markerSize,
 
-    width:w,
+    width:
+      w,
 
-    height:h
+    height:
+      h
   };
 }
 
 
 /* =====================================================
-   导入截图结果
+   导入识别结果
    ===================================================== */
 
 function importRecognizedSequence(
@@ -2285,7 +3189,7 @@ function importRecognizedSequence(
 
 
   /*
-    没有Reset就永远继续追加。
+    没按Reset就继续追加。
 
     不覆盖。
     不去重。
@@ -2293,9 +3197,14 @@ function importRecognizedSequence(
 
   bpSequence.forEach(result => {
 
-    gameHistory.push(result);
+    gameHistory.push(
+      result
+    );
 
-    advanceAfterInput(result);
+
+    advanceAfterInput(
+      result
+    );
   });
 
 
@@ -2323,16 +3232,19 @@ function importRecognizedSequence(
 
 
 /* =====================================================
-   图片选择事件
+   图片选择
    ===================================================== */
 
 function setupImageRecognition() {
 
   const input =
-    byId('imageInput');
+    byId(
+      'imageInput'
+    );
 
 
   if (!input) {
+
     return;
   }
 
@@ -2343,39 +3255,49 @@ function setupImageRecognition() {
     function(event) {
 
       const file =
-        event.target.files &&
+        event.target.files
+        &&
         event.target.files[0];
 
 
       if (!file) {
+
         return;
       }
 
 
       const statusBox =
-        byId('scanStatusBox');
+        byId(
+          'scanStatusBox'
+        );
 
 
       const status =
-        byId('scanStatus');
+        byId(
+          'scanStatus'
+        );
 
 
       if (statusBox) {
 
         statusBox
           .classList
-          .remove('hidden');
+          .remove(
+            'hidden'
+          );
       }
 
 
       if (status) {
 
         status.textContent =
-          '正在识别红圈 B / 蓝圈 P……';
+          '正在识别红圈B / 蓝圈P……';
       }
 
 
-      setButtonsDisabled(true);
+      setButtonsDisabled(
+        true
+      );
 
 
       const img =
@@ -2383,7 +3305,9 @@ function setupImageRecognition() {
 
 
       const url =
-        URL.createObjectURL(file);
+        URL.createObjectURL(
+          file
+        );
 
 
       img.onload =
@@ -2392,7 +3316,9 @@ function setupImageRecognition() {
         try {
 
           const result =
-            recognizeRoad(img);
+            recognizeRoad(
+              img
+            );
 
 
           const imported =
@@ -2410,9 +3336,13 @@ function setupImageRecognition() {
               `总历史 ${imported.afterCount}手`;
           }
 
-        } catch (err) {
+        } catch (
+          err
+        ) {
 
-          console.error(err);
+          console.error(
+            err
+          );
 
 
           if (status) {
@@ -2423,9 +3353,14 @@ function setupImageRecognition() {
 
         } finally {
 
-          setButtonsDisabled(false);
+          setButtonsDisabled(
+            false
+          );
 
-          URL.revokeObjectURL(url);
+
+          URL.revokeObjectURL(
+            url
+          );
         }
       };
 
@@ -2440,13 +3375,19 @@ function setupImageRecognition() {
         }
 
 
-        setButtonsDisabled(false);
+        setButtonsDisabled(
+          false
+        );
 
-        URL.revokeObjectURL(url);
+
+        URL.revokeObjectURL(
+          url
+        );
       };
 
 
-      img.src = url;
+      img.src =
+        url;
     }
   );
 }
@@ -2460,23 +3401,23 @@ window.toggleInstructions =
 function() {
 
   const modal =
-    byId('instModal');
+    byId(
+      'instModal'
+    );
 
 
   const text =
-    byId('instText');
+    byId(
+      'instText'
+    );
 
 
   if (text) {
 
     text.textContent =
-`使用规则：
+`截图识别规则：
 
-【截图识别】
-
-只截路单区域。
-
-程序现在只识别：
+程序只识别：
 
 红圈 = B
 蓝圈 = P
@@ -2487,71 +3428,71 @@ function() {
 不统计和。
 
 
-【识别原则】
+本版已经关闭：
 
-程序只计算截图里
-真实检测到的红圈和蓝圈。
-
-不会自动补空格。
-
-不会因为某一列有6个位置，
-就强行增加6手。
-
-不会因为上下有结果，
-就自动补中间弱格。
+自动补空格
+自动补弱格
+自动补列
+自动增加手数
 
 
-同一竖排的颜色规则
-只用于判断这一列是B还是P。
+每一个B/P都必须
+在图片里真实检测到。
+
+
+如果绿色斜杠把一个红圈或蓝圈
+切成两个碎片，
+
+程序会先把碎片重新合并，
+只算一手。
+
+
+图片最左、最右边缘
+如果只有很小的红蓝残片，
+
+程序不会把它算成一手。
+
+
+同一竖排颜色
+只用来判断：
+
+这一列是B还是P。
 
 不会用于增加手数。
 
 
 读取顺序：
 
-从左到右。
+从左到右，
 
-每一竖排：
-从上到下。
-
-
-如果程序发现：
-
-某一列超过6手，
-
-或者一列红蓝严重混乱，
-
-会直接停止导入并提示重新截图。
-
-宁愿不导入，
-也不把错误数据加入历史。
+每列从上到下。
 
 
 【追加】
 
-只要没有按Reset：
+没按Reset：
 
-截图识别的B/P
-全部继续追加。
+每一次截图识别的B/P
+继续追加到历史。
 
-手动点击P/B
+手动输入P/B
 也继续追加。
 
 
 【Back】
 
 删除最后一个B/P，
-并根据剩余历史重新计算。
+重新计算。
 
 
 【Reset】
 
-Reset是唯一清零方式。
+唯一清零方式。
 
 
 【统计】
 
-从第91个B/P开始统计：
+第91个B/P开始：
 
 预测
 命中
@@ -2570,7 +3511,9 @@ Reset是唯一清零方式。
 
     modal
       .classList
-      .remove('hidden');
+      .remove(
+        'hidden'
+      );
   }
 };
 
@@ -2583,14 +3526,18 @@ window.closeInstructions =
 function() {
 
   const modal =
-    byId('instModal');
+    byId(
+      'instModal'
+    );
 
 
   if (modal) {
 
     modal
       .classList
-      .add('hidden');
+      .add(
+        'hidden'
+      );
   }
 };
 
