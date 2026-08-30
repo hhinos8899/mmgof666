@@ -1,31 +1,50 @@
 <!doctype html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1">
+
   <title>AI 预测系统</title>
-  <link rel="stylesheet" href="./styles.css?v=4">
+
+  <link
+    rel="stylesheet"
+    href="./styles.css?v=5">
 </head>
 
 <body>
+
 <div class="wrap">
 
   <header class="top">
-    <div class="brand">AI</div>
-    <div class="title">预测系统</div>
+
+    <div class="brand">
+      AI
+    </div>
+
+    <div class="title">
+      预测系统
+    </div>
 
     <button
       class="inst-btn"
       onclick="toggleInstructions()">
-      说明
+      使用说明
     </button>
+
   </header>
+
 
   <main class="card">
 
     <!-- 当前预测 -->
     <section class="result">
+
       <div class="result-row">
+
         <div
           id="resultLabel"
           class="result-label">
@@ -37,43 +56,75 @@
           class="result-text">
           加载中...
         </div>
+
       </div>
 
       <div
         id="resultPct"
         class="result-pct">
       </div>
+
     </section>
 
-    <!-- 第91手统计：一排 -->
+
+    <!-- 第91手开始统计 -->
     <section class="pred-stats">
-      <span>
-        预测 <b id="statTotal">0</b>
-      </span>
 
-      <span class="green">
-        命中 <b id="statHits">0</b>
-      </span>
+      <div class="stats-line">
 
-      <span class="red">
-        错 <b id="statMisses">0</b>
-      </span>
+        <span>
+          预测
+          <b id="statTotal">0</b>
+        </span>
 
-      <span class="green">
-        连对 <b id="statWinStreak">0</b>
-      </span>
+        <span class="green">
+          命中
+          <b id="statHits">0</b>
+        </span>
 
-      <span class="red">
-        连错 <b id="statLoseStreak">0</b>
-      </span>
+        <span class="red">
+          未中
+          <b id="statMisses">0</b>
+        </span>
 
-      <span class="yellow">
-        <b id="statRate">--</b>
-      </span>
+        <span class="yellow">
+          命中率
+          <b id="statRate">--</b>
+        </span>
+
+      </div>
+
+
+      <div class="stats-line">
+
+        <span class="green">
+          当前连对
+          <b id="statWinStreak">0</b>
+        </span>
+
+        <span class="red">
+          当前连错
+          <b id="statLoseStreak">0</b>
+        </span>
+
+        <span class="green">
+          最大连对
+          <b id="statMaxWin">0</b>
+        </span>
+
+        <span class="red">
+          最大连错
+          <b id="statMaxLose">0</b>
+        </span>
+
+      </div>
+
     </section>
 
-    <!-- 操作按钮 -->
+
+    <!-- 操作 -->
     <section class="controls">
+
       <button
         class="btn player-btn"
         onclick="recordResult('P')">
@@ -89,7 +140,7 @@
       <button
         class="btn scan-btn"
         onclick="openScreenshot()">
-        📷 截图
+        📷 截图识别
       </button>
 
       <button
@@ -109,9 +160,11 @@
         type="file"
         accept="image/*"
         hidden>
+
     </section>
 
-    <!-- 截图状态：压缩 -->
+
+    <!-- 截图状态 -->
     <section
       id="scanStatusBox"
       class="scan-status hidden">
@@ -124,25 +177,38 @@
         id="scanCanvas"
         class="scan-canvas">
       </canvas>
+
     </section>
 
-    <!-- 历史：占剩余空间 -->
+
+    <!-- 历史 -->
     <section class="history">
+
       <div class="history-title">
-        记录
-        <span id="historyCount">0手</span>
+
+        <span>
+          记录
+        </span>
+
+        <span id="historyCount">
+          0手
+        </span>
+
       </div>
 
       <div
         id="recordDisplay"
         class="record">
       </div>
+
     </section>
 
   </main>
+
 </div>
 
-<!-- 说明 -->
+
+<!-- 使用说明 -->
 <div
   id="instModal"
   class="modal hidden"
@@ -153,6 +219,7 @@
     onclick="event.stopPropagation()">
 
     <div class="modal-head">
+
       <div class="modal-title">
         使用说明
       </div>
@@ -162,14 +229,19 @@
         onclick="closeInstructions()">
         ×
       </button>
+
     </div>
 
     <pre
       id="instText"
       class="modal-text"></pre>
+
   </div>
+
 </div>
 
-<script src="./app.js?v=4"></script>
+
+<script src="./app.js?v=5"></script>
+
 </body>
 </html>
