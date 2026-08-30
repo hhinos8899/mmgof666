@@ -1,9 +1,8 @@
 /* =====================================================
    AI 预测系统
-   app.js V14 最终稳定版
+   app.js V15 稳定修正版
 
    截图识别：
-
    红圈 = B
    蓝圈 = P
    绿色全部忽略
@@ -16,10 +15,9 @@
    5. 真实检测到红/蓝才算一手
    6. 同一竖排颜色只辅助判断 B/P
    7. 过滤最左边明显的小残片
-   8. 检查第一列是否为重复假列
-      专门修复：
-      49手被识别成50手、
-      开头多一个P的问题
+   8. 同一个圆如果被绿色斜线切成两块，
+      先重新合并，只算一手
+   9. 第一列重复检测继续保留作为第二道保险
    ===================================================== */
 
 
@@ -54,7 +52,6 @@ let gameHistory = [];
 
 let waiting = false;
 
-
 /*
   phase:
   0 = 套入
@@ -68,27 +65,21 @@ let phase = 0;
 /* phase 0 */
 
 let matchIdx = 0;
-
 let completedAtRealHand = 0;
-
 let phase0Cursor = 0;
 
 
 /* phase 1 */
 
 let gateStep = 0;
-
 let gateHits = 0;
-
 let lastGateLine = "";
 
 
 /* phase 2 */
 
 let loopGroupIdx = 0;
-
 let loopPos = 0;
-
 let phase2StartRealHand = 0;
 
 
@@ -99,15 +90,12 @@ let phase2StartRealHand = 0;
 const STATS_START_HAND = 91;
 
 let predictionTotal = 0;
-
 let predictionHits = 0;
 
 let currentWinStreak = 0;
-
 let currentLoseStreak = 0;
 
 let maxWinStreak = 0;
-
 let maxLoseStreak = 0;
 
 
@@ -116,7 +104,6 @@ let maxLoseStreak = 0;
    ===================================================== */
 
 function byId(id) {
-
   return document.getElementById(id);
 }
 
@@ -128,15 +115,10 @@ function byId(id) {
 function setButtonsDisabled(disabled) {
 
   const buttons =
-    document.querySelectorAll(
-      '.btn'
-    );
-
+    document.querySelectorAll('.btn');
 
   buttons.forEach(btn => {
-
-    btn.disabled =
-      disabled;
+    btn.disabled = disabled;
   });
 }
 
@@ -150,16 +132,11 @@ function setLabelAI() {
   const label =
     byId('resultLabel');
 
-
   if (!label) {
-
     return;
   }
 
-
-  label.textContent =
-    'AI';
-
+  label.textContent = 'AI';
 
   label.classList.remove(
     'player',
@@ -173,22 +150,16 @@ function setLabelSide(side) {
   const label =
     byId('resultLabel');
 
-
   if (!label) {
-
     return;
   }
 
-
-  label.textContent =
-    side;
-
+  label.textContent = side;
 
   label.classList.remove(
     'player',
     'banker'
   );
-
 
   label.classList.add(
     side === 'B'
@@ -202,17 +173,11 @@ function showTextOnly(msg) {
 
   setLabelAI();
 
-
   const text =
-    byId(
-      'predictionText'
-    );
-
+    byId('predictionText');
 
   if (text) {
-
-    text.textContent =
-      msg;
+    text.textContent = msg;
   }
 }
 
@@ -224,51 +189,32 @@ function showTextOnly(msg) {
 function renderHistory() {
 
   const recordDisplay =
-    byId(
-      'recordDisplay'
-    );
-
+    byId('recordDisplay');
 
   if (!recordDisplay) {
-
     return;
   }
 
-
-  recordDisplay.innerHTML =
-    '';
-
+  recordDisplay.innerHTML = '';
 
   gameHistory.forEach(type => {
 
     const item =
-      document.createElement(
-        'div'
-      );
-
+      document.createElement('div');
 
     item.className =
       `record-item ${type.toLowerCase()}`;
 
+    item.textContent = type;
 
-    item.textContent =
-      type;
-
-
-    recordDisplay.appendChild(
-      item
-    );
+    recordDisplay.appendChild(item);
   });
 
 
   const count =
-    byId(
-      'historyCount'
-    );
-
+    byId('historyCount');
 
   if (count) {
-
     count.textContent =
       `${gameHistory.length}手`;
   }
@@ -289,15 +235,12 @@ function renderHistory() {
 function resetPredictionStats() {
 
   predictionTotal = 0;
-
   predictionHits = 0;
 
   currentWinStreak = 0;
-
   currentLoseStreak = 0;
 
   maxWinStreak = 0;
-
   maxLoseStreak = 0;
 }
 
@@ -316,7 +259,6 @@ function settlePrediction(
     realHand <
     STATS_START_HAND
   ) {
-
     return;
   }
 
@@ -325,7 +267,6 @@ function settlePrediction(
     actual !== 'B' &&
     actual !== 'P'
   ) {
-
     return;
   }
 
@@ -334,7 +275,6 @@ function settlePrediction(
     predicted !== 'B' &&
     predicted !== 'P'
   ) {
-
     return;
   }
 
@@ -349,7 +289,6 @@ function settlePrediction(
     predictionHits++;
 
     currentWinStreak++;
-
     currentLoseStreak = 0;
 
 
@@ -357,7 +296,6 @@ function settlePrediction(
       currentWinStreak >
       maxWinStreak
     ) {
-
       maxWinStreak =
         currentWinStreak;
     }
@@ -365,7 +303,6 @@ function settlePrediction(
   } else {
 
     currentLoseStreak++;
-
     currentWinStreak = 0;
 
 
@@ -373,7 +310,6 @@ function settlePrediction(
       currentLoseStreak >
       maxLoseStreak
     ) {
-
       maxLoseStreak =
         currentLoseStreak;
     }
@@ -388,10 +324,8 @@ function settlePrediction(
 function getHitRate() {
 
   if (!predictionTotal) {
-
     return '--';
   }
-
 
   return (
     (
@@ -442,56 +376,41 @@ function renderPredictionStats() {
 
 
   if (totalEl) {
-
     totalEl.textContent =
       predictionTotal;
   }
 
-
   if (hitsEl) {
-
     hitsEl.textContent =
       predictionHits;
   }
 
-
   if (missesEl) {
-
     missesEl.textContent =
       misses;
   }
 
-
   if (winEl) {
-
     winEl.textContent =
       currentWinStreak;
   }
 
-
   if (loseEl) {
-
     loseEl.textContent =
       currentLoseStreak;
   }
 
-
   if (maxWinEl) {
-
     maxWinEl.textContent =
       maxWinStreak;
   }
 
-
   if (maxLoseEl) {
-
     maxLoseEl.textContent =
       maxLoseStreak;
   }
 
-
   if (rateEl) {
-
     rateEl.textContent =
       getHitRate();
   }
@@ -505,7 +424,6 @@ function renderPredictionStats() {
 function virtualHandFor(realHand) {
 
   if (!completedAtRealHand) {
-
     return null;
   }
 
@@ -522,10 +440,8 @@ function virtualHandFor(realHand) {
   if (phase === 2) {
 
     if (!phase2StartRealHand) {
-
       return null;
     }
-
 
     return (
       28 +
@@ -544,16 +460,11 @@ function virtualHandFor(realHand) {
 function fmtHand(realHand) {
 
   const v =
-    virtualHandFor(
-      realHand
-    );
+    virtualHandFor(realHand);
 
 
   if (v === null) {
-
-    return (
-      `第${realHand}手`
-    );
+    return `第${realHand}手`;
   }
 
 
@@ -570,10 +481,7 @@ function fmtHand(realHand) {
 function nextPredLetter() {
 
   if (phase === 1) {
-
-    return (
-      "PBP"[gateStep]
-    );
+    return "PBP"[gateStep];
   }
 
 
@@ -601,16 +509,12 @@ function advanceAfterInput(actual) {
   if (phase === 0) {
 
     const need =
-      GROUPS[
-        matchIdx
-      ];
+      GROUPS[matchIdx];
 
 
     if (
       actual ===
-      need[
-        phase0Cursor
-      ]
+      need[phase0Cursor]
     ) {
 
       phase0Cursor++;
@@ -622,7 +526,6 @@ function advanceAfterInput(actual) {
       ) {
 
         matchIdx++;
-
         phase0Cursor = 0;
 
 
@@ -633,32 +536,23 @@ function advanceAfterInput(actual) {
 
           matchIdx = 0;
 
-
           completedAtRealHand =
             gameHistory.length;
 
-
           phase = 1;
 
-
           gateStep = 0;
-
           gateHits = 0;
-
 
           lastGateLine =
             '✅ 已套完24手｜开始门槛PBP';
 
-
           loopGroupIdx = 0;
-
           loopPos = 0;
-
           phase2StartRealHand = 0;
         }
       }
     }
-
 
     return;
   }
@@ -671,9 +565,7 @@ function advanceAfterInput(actual) {
   if (phase === 1) {
 
     const pred =
-      "PBP"[
-        gateStep
-      ];
+      "PBP"[gateStep];
 
 
     const hit =
@@ -681,7 +573,6 @@ function advanceAfterInput(actual) {
 
 
     if (hit) {
-
       gateHits++;
     }
 
@@ -704,7 +595,6 @@ function advanceAfterInput(actual) {
     if (
       gateStep < 3
     ) {
-
       return;
     }
 
@@ -715,22 +605,17 @@ function advanceAfterInput(actual) {
 
       phase = 2;
 
-
       phase2StartRealHand =
         gameHistory.length + 1;
 
-
       loopGroupIdx = 0;
-
       loopPos = 0;
 
     } else {
 
       gateStep = 0;
-
       gateHits = 0;
     }
-
 
     return;
   }
@@ -766,7 +651,6 @@ function advanceAfterInput(actual) {
 
       loopPos = 0;
 
-
       loopGroupIdx =
         (
           loopGroupIdx + 1
@@ -794,15 +678,12 @@ function updateView() {
   if (phase === 0) {
 
     const need =
-      GROUPS[
-        matchIdx
-      ];
+      GROUPS[matchIdx];
 
 
     showTextOnly(
       `套入24手中｜当前需要 ${need}｜顺序命中，中间允许插`
     );
-
 
     return;
   }
@@ -818,9 +699,7 @@ function updateView() {
 
 
     const text =
-      byId(
-        'predictionText'
-      );
+      byId('predictionText');
 
 
     if (text) {
@@ -830,7 +709,6 @@ function updateView() {
         ||
         `门槛PBP｜${fmtHand(upcomingReal)}`;
     }
-
 
     return;
   }
@@ -851,9 +729,7 @@ function updateView() {
 
 
   const text =
-    byId(
-      'predictionText'
-    );
+    byId('predictionText');
 
 
   if (text) {
@@ -876,28 +752,18 @@ function recomputeFromHistory(arr) {
   phase = 0;
 
   matchIdx = 0;
-
   completedAtRealHand = 0;
-
   phase0Cursor = 0;
 
-
   gateStep = 0;
-
   gateHits = 0;
-
   lastGateLine = "";
 
-
   loopGroupIdx = 0;
-
   loopPos = 0;
-
   phase2StartRealHand = 0;
 
-
   resetPredictionStats();
-
 
   gameHistory = [];
 
@@ -922,7 +788,6 @@ window.recordResult =
 function(type) {
 
   if (waiting) {
-
     return;
   }
 
@@ -931,42 +796,28 @@ function(type) {
     type !== 'B' &&
     type !== 'P'
   ) {
-
     return;
   }
 
 
   waiting = true;
 
-
-  setButtonsDisabled(
-    true
-  );
+  setButtonsDisabled(true);
 
 
-  gameHistory.push(
-    type
-  );
+  gameHistory.push(type);
 
-
-  advanceAfterInput(
-    type
-  );
+  advanceAfterInput(type);
 
 
   renderHistory();
-
   renderPredictionStats();
-
   updateView();
 
 
   waiting = false;
 
-
-  setButtonsDisabled(
-    false
-  );
+  setButtonsDisabled(false);
 };
 
 
@@ -978,13 +829,11 @@ window.undoLastMove =
 function() {
 
   if (waiting) {
-
     return;
   }
 
 
   if (!gameHistory.length) {
-
     return;
   }
 
@@ -996,15 +845,11 @@ function() {
   old.pop();
 
 
-  recomputeFromHistory(
-    old
-  );
+  recomputeFromHistory(old);
 
 
   renderHistory();
-
   renderPredictionStats();
-
   updateView();
 };
 
@@ -1017,36 +862,27 @@ window.resetGame =
 function() {
 
   if (waiting) {
-
     return;
   }
 
 
-  recomputeFromHistory(
-    []
-  );
+  recomputeFromHistory([]);
 
 
   renderHistory();
-
   renderPredictionStats();
-
   updateView();
 
 
   const statusBox =
-    byId(
-      'scanStatusBox'
-    );
+    byId('scanStatusBox');
 
 
   if (statusBox) {
 
     statusBox
       .classList
-      .add(
-        'hidden'
-      );
+      .add('hidden');
   }
 };
 
@@ -1059,20 +895,15 @@ window.openScreenshot =
 function() {
 
   const input =
-    byId(
-      'imageInput'
-    );
+    byId('imageInput');
 
 
   if (!input) {
-
     return;
   }
 
 
-  input.value =
-    '';
-
+  input.value = '';
 
   input.click();
 };
@@ -1089,31 +920,18 @@ function rgbToHSV(
 ) {
 
   r /= 255;
-
   g /= 255;
-
   b /= 255;
 
 
   const max =
-    Math.max(
-      r,
-      g,
-      b
-    );
-
+    Math.max(r, g, b);
 
   const min =
-    Math.min(
-      r,
-      g,
-      b
-    );
-
+    Math.min(r, g, b);
 
   const d =
-    max -
-    min;
+    max - min;
 
 
   let h = 0;
@@ -1134,9 +952,7 @@ function rgbToHSV(
           6
         );
 
-    } else if (
-      max === g
-    ) {
+    } else if (max === g) {
 
       h =
         60 *
@@ -1162,7 +978,6 @@ function rgbToHSV(
 
 
   if (h < 0) {
-
     h += 360;
   }
 
@@ -1174,11 +989,8 @@ function rgbToHSV(
 
 
   return {
-
     h,
-
     s,
-
     v:max
   };
 }
@@ -1203,7 +1015,6 @@ function classifyColor(
   if (
     a < 100
   ) {
-
     return null;
   }
 
@@ -1220,7 +1031,6 @@ function classifyColor(
     hsv.s < 0.23 ||
     hsv.v < 0.24
   ) {
-
     return null;
   }
 
@@ -1231,7 +1041,6 @@ function classifyColor(
     hsv.h <= 30 ||
     hsv.h >= 330
   ) {
-
     return 'B';
   }
 
@@ -1242,7 +1051,6 @@ function classifyColor(
     hsv.h >= 175 &&
     hsv.h <= 262
   ) {
-
     return 'P';
   }
 
@@ -1252,7 +1060,7 @@ function classifyColor(
 
 
 /* =====================================================
-   红蓝Mask
+   红蓝 Mask
    ===================================================== */
 
 function createSideMasks(
@@ -1267,15 +1075,10 @@ function createSideMasks(
 
 
   const red =
-    new Uint8Array(
-      total
-    );
-
+    new Uint8Array(total);
 
   const blue =
-    new Uint8Array(
-      total
-    );
+    new Uint8Array(total);
 
 
   const data =
@@ -1317,9 +1120,7 @@ function createSideMasks(
 
 
   return {
-
     red,
-
     blue
   };
 }
@@ -1342,9 +1143,7 @@ function findMaskComponents(
 
 
   const visited =
-    new Uint8Array(
-      total
-    );
+    new Uint8Array(total);
 
 
   const result = [];
@@ -1372,37 +1171,26 @@ function findMaskComponents(
       !mask[start] ||
       visited[start]
     ) {
-
       continue;
     }
 
 
     visited[start] = 1;
 
-
     stack.length = 0;
 
-
-    stack.push(
-      start
-    );
+    stack.push(start);
 
 
     let area = 0;
 
     let sumX = 0;
-
     let sumY = 0;
 
-
-    let minX =
-      width;
-
+    let minX = width;
     let maxX = 0;
 
-    let minY =
-      height;
-
+    let minY = height;
     let maxY = 0;
 
 
@@ -1430,7 +1218,6 @@ function findMaskComponents(
       area++;
 
       sumX += x;
-
       sumY += y;
 
 
@@ -1440,20 +1227,17 @@ function findMaskComponents(
           x
         );
 
-
       maxX =
         Math.max(
           maxX,
           x
         );
 
-
       minY =
         Math.min(
           minY,
           y
         );
-
 
       maxY =
         Math.max(
@@ -1482,7 +1266,6 @@ function findMaskComponents(
             ox === 0 &&
             oy === 0
           ) {
-
             continue;
           }
 
@@ -1501,7 +1284,6 @@ function findMaskComponents(
             ny < 0 ||
             ny >= height
           ) {
-
             continue;
           }
 
@@ -1519,10 +1301,7 @@ function findMaskComponents(
 
             visited[ni] = 1;
 
-
-            stack.push(
-              ni
-            );
+            stack.push(ni);
           }
         }
       }
@@ -1533,7 +1312,6 @@ function findMaskComponents(
       area <
       minArea
     ) {
-
       continue;
     }
 
@@ -1554,7 +1332,6 @@ function findMaskComponents(
       bw < 2 ||
       bh < 2
     ) {
-
       continue;
     }
 
@@ -1574,11 +1351,9 @@ function findMaskComponents(
         area,
 
       minX,
-
       maxX,
 
       minY,
-
       maxY,
 
       width:
@@ -1600,10 +1375,7 @@ function findMaskComponents(
 
 function median(arr) {
 
-  if (
-    !arr.length
-  ) {
-
+  if (!arr.length) {
     return 0;
   }
 
@@ -1628,20 +1400,13 @@ function median(arr) {
     2
   ) {
 
-    return values[
-      middle
-    ];
+    return values[middle];
   }
 
 
   return (
-    values[
-      middle - 1
-    ]
-    +
-    values[
-      middle
-    ]
+    values[middle - 1] +
+    values[middle]
   )
   /
   2;
@@ -1658,16 +1423,16 @@ function estimateMarkerSize(
 
   const sizes =
     components
-      .map(c =>
-
-        Math.max(
-          c.width,
-          c.height
-        )
+      .map(
+        c =>
+          Math.max(
+            c.width,
+            c.height
+          )
       )
-      .filter(size =>
-
-        size >= 3
+      .filter(
+        size =>
+          size >= 3
       )
       .sort(
         (a, b) =>
@@ -1675,10 +1440,7 @@ function estimateMarkerSize(
       );
 
 
-  if (
-    !sizes.length
-  ) {
-
+  if (!sizes.length) {
     return 12;
   }
 
@@ -1691,9 +1453,7 @@ function estimateMarkerSize(
 
 
   const usable =
-    sizes.slice(
-      start
-    );
+    sizes.slice(start);
 
 
   return (
@@ -1709,7 +1469,8 @@ function estimateMarkerSize(
 /* =====================================================
    过滤明显噪点
 
-   只额外处理最左边小残片。
+   保留V14规则：
+   只额外过滤最左边明显小残片。
    ===================================================== */
 
 function filterComponents(
@@ -1749,7 +1510,6 @@ function filterComponents(
       big >
       maxSize
     ) {
-
       return false;
     }
 
@@ -1758,16 +1518,9 @@ function filterComponents(
       c.area <
       minArea
     ) {
-
       return false;
     }
 
-
-    /*
-      最左侧只有明显小残片时才删除。
-
-      正常第一手不动。
-    */
 
     if (
       c.minX <
@@ -1783,13 +1536,290 @@ function filterComponents(
         0.055
       )
     ) {
-
       return false;
     }
 
 
     return true;
   });
+}
+
+
+/* =====================================================
+   V15 新增：
+   同一个圆碎片快速合并
+
+   解决：
+   一个蓝圈/红圈被绿色斜线切开后，
+   被程序错误识别成两个结果。
+
+   只处理已经找到的 component，
+   不重新扫描整张图片，
+   所以计算量很小。
+   ===================================================== */
+
+function mergeSameMarkerFragments(
+  components,
+  markerSize
+) {
+
+  if (
+    components.length <
+    2
+  ) {
+    return components;
+  }
+
+
+  const used =
+    new Uint8Array(
+      components.length
+    );
+
+
+  const result = [];
+
+
+  /*
+    同一个圆的两块碎片：
+
+    Y中心应该非常接近；
+    X中心允许一定距离。
+  */
+
+  const maxDx =
+    markerSize *
+    0.82;
+
+
+  const maxDy =
+    markerSize *
+    0.32;
+
+
+  const maxHorizontalGap =
+    markerSize *
+    0.30;
+
+
+  for (
+    let i = 0;
+    i < components.length;
+    i++
+  ) {
+
+    if (used[i]) {
+      continue;
+    }
+
+
+    const base =
+      components[i];
+
+
+    used[i] = 1;
+
+
+    const group =
+      [base];
+
+
+    /*
+      只在剩余component里找
+      可能属于同一个圆的同色碎片。
+    */
+
+    for (
+      let j = i + 1;
+      j < components.length;
+      j++
+    ) {
+
+      if (used[j]) {
+        continue;
+      }
+
+
+      const other =
+        components[j];
+
+
+      /*
+        红只跟红合并，
+        蓝只跟蓝合并。
+      */
+
+      if (
+        other.side !==
+        base.side
+      ) {
+        continue;
+      }
+
+
+      const dx =
+        Math.abs(
+          other.x -
+          base.x
+        );
+
+
+      const dy =
+        Math.abs(
+          other.y -
+          base.y
+        );
+
+
+      if (
+        dx >
+        maxDx ||
+        dy >
+        maxDy
+      ) {
+        continue;
+      }
+
+
+      /*
+        两块在X方向真正分开的距离。
+
+        如果已经离得像两个独立圆，
+        就不能合并。
+      */
+
+      const horizontalGap =
+        Math.max(
+          0,
+          Math.max(
+            base.minX,
+            other.minX
+          )
+          -
+          Math.min(
+            base.maxX,
+            other.maxX
+          )
+        );
+
+
+      if (
+        horizontalGap >
+        maxHorizontalGap
+      ) {
+        continue;
+      }
+
+
+      used[j] = 1;
+
+      group.push(other);
+    }
+
+
+    /*
+      把这一组碎片合成一个marker。
+    */
+
+    let area = 0;
+
+    let weightedX = 0;
+    let weightedY = 0;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+
+    group.forEach(item => {
+
+      area +=
+        item.area;
+
+
+      weightedX +=
+        item.x *
+        item.area;
+
+
+      weightedY +=
+        item.y *
+        item.area;
+
+
+      minX =
+        Math.min(
+          minX,
+          item.minX
+        );
+
+
+      maxX =
+        Math.max(
+          maxX,
+          item.maxX
+        );
+
+
+      minY =
+        Math.min(
+          minY,
+          item.minY
+        );
+
+
+      maxY =
+        Math.max(
+          maxY,
+          item.maxY
+        );
+    });
+
+
+    if (
+      area <= 0
+    ) {
+      continue;
+    }
+
+
+    result.push({
+
+      side:
+        base.side,
+
+      area,
+
+      x:
+        weightedX /
+        area,
+
+      y:
+        weightedY /
+        area,
+
+      minX,
+      maxX,
+
+      minY,
+      maxY,
+
+      width:
+        maxX -
+        minX +
+        1,
+
+      height:
+        maxY -
+        minY +
+        1
+    });
+  }
+
+
+  return result;
 }
 
 
@@ -1803,10 +1833,7 @@ function clusterNumbers(
   tolerance
 ) {
 
-  if (
-    !items.length
-  ) {
-
+  if (!items.length) {
     return [];
   }
 
@@ -1847,15 +1874,13 @@ function clusterNumbers(
 
 
       if (
-        distance <=
-        tolerance &&
+        distance <= tolerance &&
         distance <
         bestDistance
       ) {
 
         best =
           group;
-
 
         bestDistance =
           distance;
@@ -1874,14 +1899,11 @@ function clusterNumbers(
           [item]
       });
 
-
       return;
     }
 
 
-    best.items.push(
-      item
-    );
+    best.items.push(item);
 
 
     let weightTotal = 0;
@@ -2003,7 +2025,6 @@ function buildCellsForColumn(
     if (
       totalArea <= 0
     ) {
-
       return;
     }
 
@@ -2022,7 +2043,6 @@ function buildCellsForColumn(
         totalArea,
 
       redArea,
-
       blueArea
     });
   });
@@ -2080,10 +2100,7 @@ function buildRealColumns(
       );
 
 
-    if (
-      !cells.length
-    ) {
-
+    if (!cells.length) {
       return;
     }
 
@@ -2136,7 +2153,6 @@ function buildRealColumns(
     if (
       dominant <= 0
     ) {
-
       return;
     }
 
@@ -2144,8 +2160,7 @@ function buildRealColumns(
     /*
       同一竖排只有一种主体颜色。
 
-      红蓝太接近就停止，
-      不乱猜。
+      红蓝太接近时不乱猜。
     */
 
     if (
@@ -2196,28 +2211,7 @@ function buildRealColumns(
 /* =====================================================
    第一列重复假列检查
 
-   专门修复：
-
-   实际49手
-   程序50手
-
-   开头：
-   P P B ...
-
-   实际应该：
-   P B ...
-
-   判断依据：
-
-   1. 第一列只有1手
-   2. 第一列到第二列的距离
-      明显小于后面的正常列距
-
-   满足两个条件，
-   才删除第一列。
-
-   不按颜色直接删，
-   不按固定位置直接删。
+   保留V14作为第二道保护。
    ===================================================== */
 
 function removeFalseFirstColumn(
@@ -2228,20 +2222,17 @@ function removeFalseFirstColumn(
     columns.length <
     3
   ) {
-
     return columns;
   }
 
 
-  /*
-    从第二列开始计算正常列距。
-
-    不把第一个可疑距离
-    加入正常距离计算。
-  */
-
   const gaps = [];
 
+
+  /*
+    不把第一列与第二列之间
+    那个可疑距离加入正常间距。
+  */
 
   for (
     let i = 1;
@@ -2258,43 +2249,24 @@ function removeFalseFirstColumn(
       gap > 0
     ) {
 
-      gaps.push(
-        gap
-      );
+      gaps.push(gap);
     }
   }
 
 
-  if (
-    !gaps.length
-  ) {
-
+  if (!gaps.length) {
     return columns;
   }
 
 
-  gaps.sort(
-    (a, b) =>
-      a - b
-  );
-
-
-  /*
-    使用中位数作为正常列距，
-    避免某一个异常距离影响判断。
-  */
-
   const normalGap =
-    median(
-      gaps
-    );
+    median(gaps);
 
 
   if (
     !normalGap ||
     normalGap <= 0
   ) {
-
     return columns;
   }
 
@@ -2305,25 +2277,24 @@ function removeFalseFirstColumn(
 
 
   /*
-    第一列只有一个结果，
-    同时第一、第二列靠得异常近，
+    只有：
 
-    才认为第一列是
-    同一个圆被拆出来的假列。
+    第一列只有1手
+    +
+    第一、第二列距离异常近
+
+    才删除第一列。
   */
 
   if (
     columns[0].cells.length === 1 &&
-    firstGap >
-    0 &&
+    firstGap > 0 &&
     firstGap <
     normalGap *
     0.62
   ) {
 
-    return columns.slice(
-      1
-    );
+    return columns.slice(1);
   }
 
 
@@ -2342,8 +2313,7 @@ function columnsToSequence(
   columns
 ) {
 
-  const sequence =
-    [];
+  const sequence = [];
 
 
   columns.forEach(column => {
@@ -2368,9 +2338,7 @@ function columnsToSequence(
 function recognizeRoad(img) {
 
   const canvas =
-    byId(
-      'scanCanvas'
-    );
+    byId('scanCanvas');
 
 
   if (!canvas) {
@@ -2392,8 +2360,8 @@ function recognizeRoad(img) {
 
 
   /*
-    控制尺寸，
-    防止电脑和手机处理超大截图时卡顿。
+    控制最大尺寸，
+    避免手机/电脑大图卡顿。
   */
 
   const maxWidth =
@@ -2437,12 +2405,9 @@ function recognizeRoad(img) {
   }
 
 
-  canvas.width =
-    w;
+  canvas.width = w;
 
-
-  canvas.height =
-    h;
+  canvas.height = h;
 
 
   ctx.clearRect(
@@ -2473,7 +2438,7 @@ function recognizeRoad(img) {
 
   /*
     1.
-    红蓝Mask
+    红蓝 Mask
   */
 
   const masks =
@@ -2486,7 +2451,7 @@ function recognizeRoad(img) {
 
   /*
     2.
-    红蓝分别寻找真实区域
+    红蓝分别找真实连通区域
   */
 
   const redComponents =
@@ -2526,7 +2491,7 @@ function recognizeRoad(img) {
 
   /*
     3.
-    估计正常圆尺寸
+    估计正常圆大小
   */
 
   const markerSize =
@@ -2537,7 +2502,8 @@ function recognizeRoad(img) {
 
   /*
     4.
-    过滤明显噪点和左边小残片
+    过滤明显噪点
+    + 最左边小残片
   */
 
   components =
@@ -2560,7 +2526,36 @@ function recognizeRoad(img) {
 
   /*
     5.
-    根据真实圆建立真实竖列。
+    V15核心修复：
+
+    把同一个真实圆被绿色斜线切开的
+    同色碎片重新合并成一个marker。
+
+    解决：
+    一手 -> 两个P/B。
+  */
+
+  components =
+    mergeSameMarkerFragments(
+      components,
+      markerSize
+    );
+
+
+  if (
+    components.length <
+    2
+  ) {
+
+    throw new Error(
+      '有效红蓝圆太少'
+    );
+  }
+
+
+  /*
+    6.
+    根据真实marker建立真实竖列。
 
     不猜空列。
     不补格。
@@ -2584,12 +2579,8 @@ function recognizeRoad(img) {
 
 
   /*
-    6.
-    检查最开始是否出现
-    一个重复假列。
-
-    这是V14唯一新增的
-    主要识别修复。
+    7.
+    第一列重复保护继续保留。
   */
 
   columns =
@@ -2609,7 +2600,7 @@ function recognizeRoad(img) {
 
 
   /*
-    7.
+    8.
     转最终B/P顺序
   */
 
@@ -2630,10 +2621,7 @@ function recognizeRoad(img) {
 
 
   /*
-    异常保护。
-
-    防止突然识别成
-    100多手直接灌入历史。
+    异常保护
   */
 
   if (
@@ -2659,11 +2647,9 @@ function recognizeRoad(img) {
 
     markerSize,
 
-    width:
-      w,
+    width:w,
 
-    height:
-      h
+    height:h
   };
 }
 
@@ -2719,14 +2705,9 @@ function importRecognizedSequence(
 
   bpSequence.forEach(result => {
 
-    gameHistory.push(
-      result
-    );
+    gameHistory.push(result);
 
-
-    advanceAfterInput(
-      result
-    );
+    advanceAfterInput(result);
   });
 
 
@@ -2735,9 +2716,7 @@ function importRecognizedSequence(
 
 
   renderHistory();
-
   renderPredictionStats();
-
   updateView();
 
 
@@ -2760,13 +2739,10 @@ function importRecognizedSequence(
 function setupImageRecognition() {
 
   const input =
-    byId(
-      'imageInput'
-    );
+    byId('imageInput');
 
 
   if (!input) {
-
     return;
   }
 
@@ -2783,30 +2759,23 @@ function setupImageRecognition() {
 
 
       if (!file) {
-
         return;
       }
 
 
       const statusBox =
-        byId(
-          'scanStatusBox'
-        );
+        byId('scanStatusBox');
 
 
       const status =
-        byId(
-          'scanStatus'
-        );
+        byId('scanStatus');
 
 
       if (statusBox) {
 
         statusBox
           .classList
-          .remove(
-            'hidden'
-          );
+          .remove('hidden');
       }
 
 
@@ -2817,9 +2786,7 @@ function setupImageRecognition() {
       }
 
 
-      setButtonsDisabled(
-        true
-      );
+      setButtonsDisabled(true);
 
 
       const img =
@@ -2827,9 +2794,7 @@ function setupImageRecognition() {
 
 
       const url =
-        URL.createObjectURL(
-          file
-        );
+        URL.createObjectURL(file);
 
 
       img.onload =
@@ -2838,9 +2803,7 @@ function setupImageRecognition() {
         try {
 
           const result =
-            recognizeRoad(
-              img
-            );
+            recognizeRoad(img);
 
 
           const imported =
@@ -2860,9 +2823,7 @@ function setupImageRecognition() {
 
         } catch (err) {
 
-          console.error(
-            err
-          );
+          console.error(err);
 
 
           if (status) {
@@ -2874,18 +2835,13 @@ function setupImageRecognition() {
         } finally {
 
           /*
-            无论识别成功还是失败，
-            按钮一定恢复。
-  */
+            无论成功还是失败，
+            按钮必须恢复。
+          */
 
-          setButtonsDisabled(
-            false
-          );
+          setButtonsDisabled(false);
 
-
-          URL.revokeObjectURL(
-            url
-          );
+          URL.revokeObjectURL(url);
         }
       };
 
@@ -2900,19 +2856,13 @@ function setupImageRecognition() {
         }
 
 
-        setButtonsDisabled(
-          false
-        );
+        setButtonsDisabled(false);
 
-
-        URL.revokeObjectURL(
-          url
-        );
+        URL.revokeObjectURL(url);
       };
 
 
-      img.src =
-        url;
+      img.src = url;
     }
   );
 }
@@ -2926,15 +2876,11 @@ window.toggleInstructions =
 function() {
 
   const modal =
-    byId(
-      'instModal'
-    );
+    byId('instModal');
 
 
   const text =
-    byId(
-      'instText'
-    );
+    byId('instText');
 
 
   if (text) {
@@ -2957,6 +2903,8 @@ function() {
 不统计和。
 
 
+【识别原则】
+
 每一个结果必须
 在图片中真实检测到红色或蓝色。
 
@@ -2976,6 +2924,16 @@ function() {
 不会用于增加手数。
 
 
+如果绿色斜线
+把同一个红圈或蓝圈切成两块，
+
+程序会先把这两个同色碎片
+重新合并为一个结果，
+
+所以一个真实圆
+最多只算一手。
+
+
 读取顺序：
 
 从左到右。
@@ -2985,24 +2943,16 @@ function() {
 从上到下。
 
 
-【开头重复保护】
+【第一列保护】
 
 如果第一列只有一手，
 
-而第一列与第二列
-距离明显小于后面的正常列距，
+而且第一列和第二列的距离
+明显小于后面正常列距，
 
-程序会判断第一列
-可能是同一个圆产生的重复假列，
+才会把第一列判断成重复假列。
 
-自动删除这个假列。
-
-这个功能专门解决：
-
-实际49手，
-却识别成50手，
-
-开头多一个P或B的问题。
+不会固定删除第一手。
 
 
 【追加】
@@ -3050,9 +3000,7 @@ Reset是唯一清零方式。
 
     modal
       .classList
-      .remove(
-        'hidden'
-      );
+      .remove('hidden');
   }
 };
 
@@ -3065,18 +3013,14 @@ window.closeInstructions =
 function() {
 
   const modal =
-    byId(
-      'instModal'
-    );
+    byId('instModal');
 
 
   if (modal) {
 
     modal
       .classList
-      .add(
-        'hidden'
-      );
+      .add('hidden');
   }
 };
 
