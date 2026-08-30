@@ -1,152 +1,357 @@
 <!doctype html>
 <html lang="zh-CN">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AI 预测系统</title>
-  <link rel="stylesheet" href="./styles.css?v=2" />
+
+<meta charset="utf-8">
+
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>AI 预测系统</title>
+
+<link
+rel="stylesheet"
+href="./styles.css?v=3">
+
 </head>
 
 <body>
 
-  <div class="wrap">
+<div class="wrap">
 
-    <header class="top">
-      <div class="brand">AI</div>
-      <div class="title">预测系统（静态版）</div>
+<header class="top">
 
-      <button class="inst-btn" onclick="toggleInstructions()">
-        使用说明
-      </button>
-    </header>
+<div class="brand">
+AI
+</div>
 
-    <main class="card">
+<div class="title">
+预测系统（静态版）
+</div>
 
-      <section class="result">
+<button
+class="inst-btn"
+onclick="toggleInstructions()">
 
-        <div class="result-row">
-          <div id="resultLabel" class="result-label">AI</div>
-          <div id="resultPct" class="result-pct"></div>
-        </div>
+使用说明
 
-        <div id="predictionText" class="result-text">
-          加载中...
-        </div>
+</button>
 
-      </section>
+</header>
 
+<main class="card">
 
-      <section class="controls">
+<!-- 当前预测 -->
 
-        <button
-          class="btn player-btn"
-          onclick="recordResult('P')">
-          P
-        </button>
+<section class="result">
 
-        <button
-          class="btn banker-btn"
-          onclick="recordResult('B')">
-          B
-        </button>
+<div class="result-row">
 
-        <button
-          class="btn scan-btn"
-          onclick="openScreenshot()">
-          📷 截图识别
-        </button>
+<div
+id="resultLabel"
+class="result-label">
 
-        <button
-          class="btn back-btn"
-          onclick="undoLastMove()">
-          Back
-        </button>
+AI
 
-        <button
-          class="btn reset-btn"
-          onclick="resetGame()">
-          Reset
-        </button>
+</div>
 
-        <input
-          id="imageInput"
-          type="file"
-          accept="image/*"
-          hidden
-        />
+<div
+id="resultPct"
+class="result-pct">
 
-      </section>
+</div>
 
+</div>
 
-      <section id="scanStatusBox" class="scan-status hidden">
+<div
+id="predictionText"
+class="result-text">
 
-        <div class="scan-title">
-          截图识别
-        </div>
+加载中...
 
-        <div id="scanStatus">
-          等待图片
-        </div>
+</div>
 
-        <canvas
-          id="scanCanvas"
-          class="scan-canvas">
-        </canvas>
+</section>
 
-      </section>
+<!-- 第91手统计 -->
 
+<section class="pred-stats">
 
-      <section class="history">
+<div class="pred-stats-title">
 
-        <div class="history-title">
-          记录
-        </div>
+第91手开始预测统计
 
-        <div
-          id="recordDisplay"
-          class="record">
-        </div>
+</div>
 
-      </section>
+<div class="pred-stats-row">
 
-    </main>
+<div class="pred-stat">
 
-  </div>
+<div class="pred-stat-label">
+已预测
+</div>
 
+<div
+id="statTotal"
+class="pred-stat-value">
 
-  <div
-    id="instModal"
-    class="modal hidden"
-    onclick="closeInstructions()">
+0
 
-    <div
-      class="modal-box"
-      onclick="event.stopPropagation()">
+</div>
 
-      <div class="modal-head">
+</div>
 
-        <div class="modal-title">
-          使用说明
-        </div>
+<div class="pred-stat">
 
-        <button
-          class="modal-close"
-          onclick="closeInstructions()">
-          ×
-        </button>
+<div class="pred-stat-label">
+命中
+</div>
 
-      </div>
+<div
+id="statHits"
+class="pred-stat-value pred-correct">
 
-      <pre
-        id="instText"
-        class="modal-text"></pre>
+0
 
-    </div>
+</div>
 
-  </div>
+</div>
 
+<div class="pred-stat">
 
-  <script src="./app.js?v=2"></script>
+<div class="pred-stat-label">
+当前连对
+</div>
+
+<div
+id="statWinStreak"
+class="pred-stat-value pred-correct">
+
+0
+
+</div>
+
+</div>
+
+<div class="pred-stat">
+
+<div class="pred-stat-label">
+当前连错
+</div>
+
+<div
+id="statLoseStreak"
+class="pred-stat-value pred-wrong">
+
+0
+
+</div>
+
+</div>
+
+<div class="pred-stat">
+
+<div class="pred-stat-label">
+命中率
+</div>
+
+<div
+id="statRate"
+class="pred-stat-value pred-rate">
+
+--
+
+</div>
+
+</div>
+
+</div>
+
+<div class="pred-stats-extra">
+
+<span>
+
+未中：
+
+<strong id="statMisses">
+
+0
+
+</strong>
+
+</span>
+
+<span>
+
+最高连对：
+
+<strong id="statMaxWin">
+
+0
+
+</strong>
+
+</span>
+
+<span>
+
+最高连错：
+
+<strong id="statMaxLose">
+
+0
+
+</strong>
+
+</span>
+
+</div>
+
+</section>
+
+<!-- 按钮 -->
+
+<section class="controls">
+
+<button
+class="btn player-btn"
+onclick="recordResult('P')">
+
+P
+
+</button>
+
+<button
+class="btn banker-btn"
+onclick="recordResult('B')">
+
+B
+
+</button>
+
+<button
+class="btn scan-btn"
+onclick="openScreenshot()">
+
+📷 截图识别
+
+</button>
+
+<button
+class="btn back-btn"
+onclick="undoLastMove()">
+
+Back
+
+</button>
+
+<button
+class="btn reset-btn"
+onclick="resetGame()">
+
+Reset
+
+</button>
+
+<input
+id="imageInput"
+type="file"
+accept="image/*"
+hidden>
+
+</section>
+
+<!-- 截图状态 -->
+
+<section
+id="scanStatusBox"
+class="scan-status hidden">
+
+<div class="scan-title">
+
+截图识别
+
+</div>
+
+<div id="scanStatus">
+
+等待图片
+
+</div>
+
+<canvas
+id="scanCanvas"
+class="scan-canvas">
+
+</canvas>
+
+</section>
+
+<!-- 历史 -->
+
+<section class="history">
+
+<div class="history-title">
+
+记录
+
+</div>
+
+<div
+id="recordDisplay"
+class="record">
+
+</div>
+
+</section>
+
+</main>
+
+</div>
+
+<!-- 使用说明 -->
+
+<div
+id="instModal"
+class="modal hidden"
+onclick="closeInstructions()">
+
+<div
+class="modal-box"
+onclick="event.stopPropagation()">
+
+<div class="modal-head">
+
+<div class="modal-title">
+
+使用说明
+
+</div>
+
+<button
+class="modal-close"
+onclick="closeInstructions()">
+
+×
+
+</button>
+
+</div>
+
+<pre
+id="instText"
+class="modal-text">
+
+</pre>
+
+</div>
+
+</div>
+
+<script src="./app.js?v=3"></script>
 
 </body>
+
 </html>
