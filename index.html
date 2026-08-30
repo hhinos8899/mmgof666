@@ -1,357 +1,175 @@
 <!doctype html>
 <html lang="zh-CN">
-
 <head>
-
-<meta charset="utf-8">
-
-<meta
-name="viewport"
-content="width=device-width,initial-scale=1">
-
-<title>AI 预测系统</title>
-
-<link
-rel="stylesheet"
-href="./styles.css?v=3">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI 预测系统</title>
+  <link rel="stylesheet" href="./styles.css?v=4">
 </head>
 
 <body>
-
 <div class="wrap">
 
-<header class="top">
+  <header class="top">
+    <div class="brand">AI</div>
+    <div class="title">预测系统</div>
 
-<div class="brand">
-AI
+    <button
+      class="inst-btn"
+      onclick="toggleInstructions()">
+      说明
+    </button>
+  </header>
+
+  <main class="card">
+
+    <!-- 当前预测 -->
+    <section class="result">
+      <div class="result-row">
+        <div
+          id="resultLabel"
+          class="result-label">
+          AI
+        </div>
+
+        <div
+          id="predictionText"
+          class="result-text">
+          加载中...
+        </div>
+      </div>
+
+      <div
+        id="resultPct"
+        class="result-pct">
+      </div>
+    </section>
+
+    <!-- 第91手统计：一排 -->
+    <section class="pred-stats">
+      <span>
+        预测 <b id="statTotal">0</b>
+      </span>
+
+      <span class="green">
+        命中 <b id="statHits">0</b>
+      </span>
+
+      <span class="red">
+        错 <b id="statMisses">0</b>
+      </span>
+
+      <span class="green">
+        连对 <b id="statWinStreak">0</b>
+      </span>
+
+      <span class="red">
+        连错 <b id="statLoseStreak">0</b>
+      </span>
+
+      <span class="yellow">
+        <b id="statRate">--</b>
+      </span>
+    </section>
+
+    <!-- 操作按钮 -->
+    <section class="controls">
+      <button
+        class="btn player-btn"
+        onclick="recordResult('P')">
+        P
+      </button>
+
+      <button
+        class="btn banker-btn"
+        onclick="recordResult('B')">
+        B
+      </button>
+
+      <button
+        class="btn scan-btn"
+        onclick="openScreenshot()">
+        📷 截图
+      </button>
+
+      <button
+        class="btn back-btn"
+        onclick="undoLastMove()">
+        Back
+      </button>
+
+      <button
+        class="btn reset-btn"
+        onclick="resetGame()">
+        Reset
+      </button>
+
+      <input
+        id="imageInput"
+        type="file"
+        accept="image/*"
+        hidden>
+    </section>
+
+    <!-- 截图状态：压缩 -->
+    <section
+      id="scanStatusBox"
+      class="scan-status hidden">
+
+      <div id="scanStatus">
+        等待图片
+      </div>
+
+      <canvas
+        id="scanCanvas"
+        class="scan-canvas">
+      </canvas>
+    </section>
+
+    <!-- 历史：占剩余空间 -->
+    <section class="history">
+      <div class="history-title">
+        记录
+        <span id="historyCount">0手</span>
+      </div>
+
+      <div
+        id="recordDisplay"
+        class="record">
+      </div>
+    </section>
+
+  </main>
 </div>
 
-<div class="title">
-预测系统（静态版）
-</div>
-
-<button
-class="inst-btn"
-onclick="toggleInstructions()">
-
-使用说明
-
-</button>
-
-</header>
-
-<main class="card">
-
-<!-- 当前预测 -->
-
-<section class="result">
-
-<div class="result-row">
-
+<!-- 说明 -->
 <div
-id="resultLabel"
-class="result-label">
+  id="instModal"
+  class="modal hidden"
+  onclick="closeInstructions()">
 
-AI
+  <div
+    class="modal-box"
+    onclick="event.stopPropagation()">
 
+    <div class="modal-head">
+      <div class="modal-title">
+        使用说明
+      </div>
+
+      <button
+        class="modal-close"
+        onclick="closeInstructions()">
+        ×
+      </button>
+    </div>
+
+    <pre
+      id="instText"
+      class="modal-text"></pre>
+  </div>
 </div>
 
-<div
-id="resultPct"
-class="result-pct">
-
-</div>
-
-</div>
-
-<div
-id="predictionText"
-class="result-text">
-
-加载中...
-
-</div>
-
-</section>
-
-<!-- 第91手统计 -->
-
-<section class="pred-stats">
-
-<div class="pred-stats-title">
-
-第91手开始预测统计
-
-</div>
-
-<div class="pred-stats-row">
-
-<div class="pred-stat">
-
-<div class="pred-stat-label">
-已预测
-</div>
-
-<div
-id="statTotal"
-class="pred-stat-value">
-
-0
-
-</div>
-
-</div>
-
-<div class="pred-stat">
-
-<div class="pred-stat-label">
-命中
-</div>
-
-<div
-id="statHits"
-class="pred-stat-value pred-correct">
-
-0
-
-</div>
-
-</div>
-
-<div class="pred-stat">
-
-<div class="pred-stat-label">
-当前连对
-</div>
-
-<div
-id="statWinStreak"
-class="pred-stat-value pred-correct">
-
-0
-
-</div>
-
-</div>
-
-<div class="pred-stat">
-
-<div class="pred-stat-label">
-当前连错
-</div>
-
-<div
-id="statLoseStreak"
-class="pred-stat-value pred-wrong">
-
-0
-
-</div>
-
-</div>
-
-<div class="pred-stat">
-
-<div class="pred-stat-label">
-命中率
-</div>
-
-<div
-id="statRate"
-class="pred-stat-value pred-rate">
-
---
-
-</div>
-
-</div>
-
-</div>
-
-<div class="pred-stats-extra">
-
-<span>
-
-未中：
-
-<strong id="statMisses">
-
-0
-
-</strong>
-
-</span>
-
-<span>
-
-最高连对：
-
-<strong id="statMaxWin">
-
-0
-
-</strong>
-
-</span>
-
-<span>
-
-最高连错：
-
-<strong id="statMaxLose">
-
-0
-
-</strong>
-
-</span>
-
-</div>
-
-</section>
-
-<!-- 按钮 -->
-
-<section class="controls">
-
-<button
-class="btn player-btn"
-onclick="recordResult('P')">
-
-P
-
-</button>
-
-<button
-class="btn banker-btn"
-onclick="recordResult('B')">
-
-B
-
-</button>
-
-<button
-class="btn scan-btn"
-onclick="openScreenshot()">
-
-📷 截图识别
-
-</button>
-
-<button
-class="btn back-btn"
-onclick="undoLastMove()">
-
-Back
-
-</button>
-
-<button
-class="btn reset-btn"
-onclick="resetGame()">
-
-Reset
-
-</button>
-
-<input
-id="imageInput"
-type="file"
-accept="image/*"
-hidden>
-
-</section>
-
-<!-- 截图状态 -->
-
-<section
-id="scanStatusBox"
-class="scan-status hidden">
-
-<div class="scan-title">
-
-截图识别
-
-</div>
-
-<div id="scanStatus">
-
-等待图片
-
-</div>
-
-<canvas
-id="scanCanvas"
-class="scan-canvas">
-
-</canvas>
-
-</section>
-
-<!-- 历史 -->
-
-<section class="history">
-
-<div class="history-title">
-
-记录
-
-</div>
-
-<div
-id="recordDisplay"
-class="record">
-
-</div>
-
-</section>
-
-</main>
-
-</div>
-
-<!-- 使用说明 -->
-
-<div
-id="instModal"
-class="modal hidden"
-onclick="closeInstructions()">
-
-<div
-class="modal-box"
-onclick="event.stopPropagation()">
-
-<div class="modal-head">
-
-<div class="modal-title">
-
-使用说明
-
-</div>
-
-<button
-class="modal-close"
-onclick="closeInstructions()">
-
-×
-
-</button>
-
-</div>
-
-<pre
-id="instText"
-class="modal-text">
-
-</pre>
-
-</div>
-
-</div>
-
-<script src="./app.js?v=3"></script>
-
+<script src="./app.js?v=4"></script>
 </body>
-
 </html>
