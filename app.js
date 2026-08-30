@@ -1,27 +1,23 @@
 /* =====================================================
-   AI预测系统
-   珠盘路纯 B/P 识别版
+   AI 预测系统
+   最终稳定版 app.js
 
    截图识别规则：
 
    红圈 = B
    蓝圈 = P
 
-   绿色斜杠全部忽略，
-   不识别T，不统计T。
+   绿色全部忽略
+   不识别和
+   不统计和
 
-   珠盘结构：
-   - 固定6行
-   - 同一竖排只有一种B或P
-   - 同列从上往下连续
-   - 如果个别圆被绿色斜杠遮住，
-     会利用整列颜色和连续结构补判
-
-   没有按Reset：
-   手动输入 + 每次截图全部继续追加。
-
-   Reset：
-   唯一清零方式。
+   重要：
+   1. 绝对不自动补空格
+   2. 绝对不根据整列凭空增加手数
+   3. 只有真的检测到红/蓝主体才算一手
+   4. 同一竖排颜色只辅助判断 B/P
+   5. 手动输入 + 截图输入全部追加
+   6. 只有 Reset 清零
    ===================================================== */
 
 
@@ -58,7 +54,7 @@ let waiting = false;
 
 
 /*
-  phase
+  phase：
 
   0 = 套入
   1 = 门槛
@@ -122,6 +118,7 @@ function byId(id) {
   return document.getElementById(id);
 }
 
+
 function $(sel) {
   return document.querySelector(sel);
 }
@@ -134,7 +131,10 @@ function $(sel) {
 function setButtonsDisabled(disabled) {
 
   const buttons =
-    document.querySelectorAll('.btn');
+    document.querySelectorAll(
+      '.btn'
+    );
+
 
   buttons.forEach(btn => {
     btn.disabled = disabled;
@@ -143,7 +143,7 @@ function setButtonsDisabled(disabled) {
 
 
 /* =====================================================
-   AI标签
+   AI 标签
    ===================================================== */
 
 function setLabelAI() {
@@ -151,11 +151,15 @@ function setLabelAI() {
   const label =
     byId('resultLabel');
 
+
   if (!label) {
     return;
   }
 
-  label.textContent = 'AI';
+
+  label.textContent =
+    'AI';
+
 
   label.classList.remove(
     'player',
@@ -169,16 +173,21 @@ function setLabelSide(side) {
   const label =
     byId('resultLabel');
 
+
   if (!label) {
     return;
   }
 
-  label.textContent = side;
+
+  label.textContent =
+    side;
+
 
   label.classList.remove(
     'player',
     'banker'
   );
+
 
   label.classList.add(
     side === 'B'
@@ -192,8 +201,10 @@ function showTextOnly(msg) {
 
   setLabelAI();
 
+
   const text =
     byId('predictionText');
+
 
   if (text) {
     text.textContent = msg;
@@ -210,37 +221,50 @@ function renderHistory() {
   const recordDisplay =
     byId('recordDisplay');
 
+
   if (!recordDisplay) {
     return;
   }
 
+
   recordDisplay.innerHTML = '';
+
 
   gameHistory.forEach(type => {
 
     const item =
-      document.createElement('div');
+      document.createElement(
+        'div'
+      );
+
 
     item.className =
       `record-item ${type.toLowerCase()}`;
 
-    item.textContent = type;
 
-    recordDisplay.appendChild(item);
+    item.textContent =
+      type;
+
+
+    recordDisplay.appendChild(
+      item
+    );
   });
 
 
   const count =
     byId('historyCount');
 
+
   if (count) {
+
     count.textContent =
       `${gameHistory.length}手`;
   }
 
 
   /*
-    自动显示最新记录
+    每次新增后自动滚到最新位置
   */
 
   requestAnimationFrame(() => {
@@ -252,7 +276,7 @@ function renderHistory() {
 
 
 /* =====================================================
-   预测统计
+   统计清零
    ===================================================== */
 
 function resetPredictionStats() {
@@ -271,15 +295,15 @@ function resetPredictionStats() {
 }
 
 
+/* =====================================================
+   统计预测
+   ===================================================== */
+
 function settlePrediction(
   actual,
   predicted,
   realHand
 ) {
-
-  /*
-    第91个B/P开始统计
-  */
 
   if (
     realHand <
@@ -347,11 +371,16 @@ function settlePrediction(
 }
 
 
+/* =====================================================
+   命中率
+   ===================================================== */
+
 function getHitRate() {
 
   if (!predictionTotal) {
     return '--';
   }
+
 
   return (
     (
@@ -364,6 +393,10 @@ function getHitRate() {
   );
 }
 
+
+/* =====================================================
+   显示统计
+   ===================================================== */
 
 function renderPredictionStats() {
 
@@ -402,35 +435,42 @@ function renderPredictionStats() {
       predictionTotal;
   }
 
+
   if (hitsEl) {
     hitsEl.textContent =
       predictionHits;
   }
+
 
   if (missesEl) {
     missesEl.textContent =
       misses;
   }
 
+
   if (winEl) {
     winEl.textContent =
       currentWinStreak;
   }
+
 
   if (loseEl) {
     loseEl.textContent =
       currentLoseStreak;
   }
 
+
   if (maxWinEl) {
     maxWinEl.textContent =
       maxWinStreak;
   }
 
+
   if (maxLoseEl) {
     maxLoseEl.textContent =
       maxLoseStreak;
   }
+
 
   if (rateEl) {
     rateEl.textContent =
@@ -465,6 +505,7 @@ function virtualHandFor(realHand) {
       return null;
     }
 
+
     return (
       28 +
       (
@@ -479,10 +520,16 @@ function virtualHandFor(realHand) {
 }
 
 
+/* =====================================================
+   手数显示
+   ===================================================== */
+
 function fmtHand(realHand) {
 
   const v =
-    virtualHandFor(realHand);
+    virtualHandFor(
+      realHand
+    );
 
 
   if (v === null) {
@@ -565,17 +612,22 @@ function advanceAfterInput(actual) {
 
           matchIdx = 0;
 
+
           completedAtRealHand =
             gameHistory.length;
 
+
           phase = 1;
+
 
           gateStep = 0;
 
           gateHits = 0;
 
+
           lastGateLine =
             '✅ 已套完24手｜开始门槛PBP';
+
 
           loopGroupIdx = 0;
 
@@ -592,7 +644,7 @@ function advanceAfterInput(actual) {
 
 
   /* ===================================================
-     phase 1：PBP门槛
+     phase 1：门槛
      =================================================== */
 
   if (phase === 1) {
@@ -638,8 +690,10 @@ function advanceAfterInput(actual) {
 
       phase = 2;
 
+
       phase2StartRealHand =
         gameHistory.length + 1;
+
 
       loopGroupIdx = 0;
 
@@ -687,6 +741,7 @@ function advanceAfterInput(actual) {
 
       loopPos = 0;
 
+
       loopGroupIdx =
         (
           loopGroupIdx + 1
@@ -702,7 +757,7 @@ function advanceAfterInput(actual) {
 
 
 /* =====================================================
-   当前预测显示
+   当前显示
    ===================================================== */
 
 function updateView() {
@@ -782,7 +837,7 @@ function updateView() {
 
 
 /* =====================================================
-   Back重新计算
+   根据历史重算
    ===================================================== */
 
 function recomputeFromHistory(arr) {
@@ -973,15 +1028,27 @@ function() {
 function rgbToHSV(r, g, b) {
 
   r /= 255;
+
   g /= 255;
+
   b /= 255;
 
 
   const max =
-    Math.max(r, g, b);
+    Math.max(
+      r,
+      g,
+      b
+    );
+
 
   const min =
-    Math.min(r, g, b);
+    Math.min(
+      r,
+      g,
+      b
+    );
+
 
   const d =
     max - min;
@@ -1005,7 +1072,9 @@ function rgbToHSV(r, g, b) {
           6
         );
 
-    } else if (max === g) {
+    } else if (
+      max === g
+    ) {
 
       h =
         60 *
@@ -1042,21 +1111,23 @@ function rgbToHSV(r, g, b) {
 
 
   return {
+
     h,
+
     s,
+
     v:max
   };
 }
 
 
 /* =====================================================
-   像素颜色分类
+   颜色分类
 
-   只识别：
-   红 = B
-   蓝 = P
+   最终版：
+   只识别红、蓝。
 
-   绿色全部忽略
+   绿色彻底忽略。
    ===================================================== */
 
 function classifyColor(
@@ -1081,13 +1152,9 @@ function classifyColor(
     );
 
 
-  /*
-    太灰或太暗
-  */
-
   if (
-    hsv.s < 0.22 ||
-    hsv.v < 0.22
+    hsv.s < 0.24 ||
+    hsv.v < 0.25
   ) {
     return null;
   }
@@ -1096,8 +1163,8 @@ function classifyColor(
   /* 红 = B */
 
   if (
-    hsv.h <= 30 ||
-    hsv.h >= 330
+    hsv.h <= 28 ||
+    hsv.h >= 332
   ) {
     return 'B';
   }
@@ -1106,16 +1173,15 @@ function classifyColor(
   /* 蓝 = P */
 
   if (
-    hsv.h >= 175 &&
-    hsv.h <= 260
+    hsv.h >= 178 &&
+    hsv.h <= 258
   ) {
     return 'P';
   }
 
 
   /*
-    绿色以及其他颜色
-    全部忽略
+    绿色和其他颜色全部忽略
   */
 
   return null;
@@ -1123,31 +1189,43 @@ function classifyColor(
 
 
 /* =====================================================
-   建立红蓝Mask
+   找红蓝连通区域
+
+   这一步只用来找到真实存在的圆。
+
+   不会自动补任何格子。
    ===================================================== */
 
-function createColorMasks(
+function findColorComponents(
   imageData,
   width,
   height
 ) {
+
+  const data =
+    imageData.data;
+
 
   const total =
     width *
     height;
 
 
-  const red =
-    new Uint8Array(total);
+  const mask =
+    new Uint8Array(
+      total
+    );
 
 
-  const blue =
-    new Uint8Array(total);
+  const visited =
+    new Uint8Array(
+      total
+    );
 
 
-  const data =
-    imageData.data;
-
+  /*
+    建红蓝Mask
+  */
 
   for (
     let i = 0;
@@ -1169,581 +1247,223 @@ function createColorMasks(
 
 
     if (
-      type === 'B'
-    ) {
-
-      red[i] = 1;
-
-    } else if (
+      type === 'B' ||
       type === 'P'
     ) {
 
-      blue[i] = 1;
+      mask[i] = 1;
     }
   }
 
 
-  return {
-    red,
-    blue
-  };
-}
-
-
-/* =====================================================
-   Integral Image
-   ===================================================== */
-
-function buildIntegral(
-  mask,
-  width,
-  height
-) {
-
-  const iw =
-    width + 1;
-
-
-  const integral =
-    new Uint32Array(
-      iw *
-      (
-        height + 1
-      )
-    );
-
-
-  for (
-    let y = 1;
-    y <= height;
-    y++
-  ) {
-
-    let rowSum = 0;
-
-
-    for (
-      let x = 1;
-      x <= width;
-      x++
-    ) {
-
-      rowSum +=
-        mask[
-          (
-            y - 1
-          )
-          *
-          width
-          +
-          (
-            x - 1
-          )
-        ];
-
-
-      integral[
-        y *
-        iw +
-        x
-      ] =
-        integral[
-          (
-            y - 1
-          )
-          *
-          iw +
-          x
-        ]
-        +
-        rowSum;
-    }
-  }
-
-
-  return {
-    data:
-      integral,
-
-    width:
-      iw
-  };
-}
-
-
-/* =====================================================
-   矩形内颜色数量
-   ===================================================== */
-
-function rectCount(
-  integral,
-  x1,
-  y1,
-  x2,
-  y2,
-  width,
-  height
-) {
-
-  x1 =
-    Math.max(
-      0,
-      Math.floor(x1)
-    );
-
-
-  y1 =
-    Math.max(
-      0,
-      Math.floor(y1)
-    );
-
-
-  x2 =
-    Math.min(
-      width,
-      Math.ceil(x2)
-    );
-
-
-  y2 =
-    Math.min(
-      height,
-      Math.ceil(y2)
-    );
-
-
-  if (
-    x2 <= x1 ||
-    y2 <= y1
-  ) {
-    return 0;
-  }
-
-
-  const iw =
-    integral.width;
-
-
-  const d =
-    integral.data;
-
-
-  return (
-    d[
-      y2 * iw +
-      x2
-    ]
-    -
-    d[
-      y1 * iw +
-      x2
-    ]
-    -
-    d[
-      y2 * iw +
-      x1
-    ]
-    +
-    d[
-      y1 * iw +
-      x1
-    ]
-  );
-}
-
-
-/* =====================================================
-   单格红蓝像素统计
-   ===================================================== */
-
-function getCellColorCounts(
-  integrals,
-  cx,
-  cy,
-  halfW,
-  halfH,
-  width,
-  height
-) {
-
-  const x1 =
-    cx - halfW;
-
-  const x2 =
-    cx + halfW;
-
-  const y1 =
-    cy - halfH;
-
-  const y2 =
-    cy + halfH;
-
-
-  return {
-
-    red:
-      rectCount(
-        integrals.red,
-        x1,
-        y1,
-        x2,
-        y2,
-        width,
-        height
-      ),
-
-    blue:
-      rectCount(
-        integrals.blue,
-        x1,
-        y1,
-        x2,
-        y2,
-        width,
-        height
-      )
-  };
-}
-
-
-/* =====================================================
-   找6行珠盘网格
-
-   高度固定分6行，
-   水平方向自动搜索格距和起点。
-   ===================================================== */
-
-function findBestGrid(
-  integrals,
-  width,
-  height
-) {
-
-  const rows = 6;
-
-
-  const rowSpacing =
-    height /
-    rows;
-
-
-  const rowCenters = [];
-
-
-  for (
-    let r = 0;
-    r < rows;
-    r++
-  ) {
-
-    rowCenters.push(
-      (
-        r + 0.5
-      )
-      *
-      rowSpacing
-    );
-  }
-
-
-  let best = null;
-
-
-  const minSpacing =
-    rowSpacing *
-    0.78;
-
-
-  const maxSpacing =
-    rowSpacing *
-    1.22;
-
-
-  const spacingStep =
-    Math.max(
-      0.35,
-      rowSpacing *
-      0.025
-    );
-
-
-  for (
-    let spacing =
-      minSpacing;
-
-    spacing <=
-      maxSpacing;
-
-    spacing +=
-      spacingStep
-  ) {
-
-    const phaseStep =
-      Math.max(
-        0.35,
-        spacing /
-        18
-      );
-
-
-    for (
-      let offset = 0;
-
-      offset <
-        spacing;
-
-      offset +=
-        phaseStep
-    ) {
-
-      let score = 0;
-
-      let detected = 0;
-
-
-      const halfW =
-        spacing *
-        0.43;
-
-
-      const halfH =
-        rowSpacing *
-        0.43;
-
-
-      const maxCols =
-        Math.ceil(
-          width /
-          spacing
-        )
-        +
-        2;
-
-
-      for (
-        let c = 0;
-        c < maxCols;
-        c++
-      ) {
-
-        const cx =
-          offset +
-          c *
-          spacing;
-
-
-        if (
-          cx <
-            -spacing ||
-          cx >
-            width +
-            spacing
-        ) {
-          continue;
-        }
-
-
-        let colRed = 0;
-
-        let colBlue = 0;
-
-        let occupied = 0;
-
-
-        for (
-          let r = 0;
-          r < rows;
-          r++
-        ) {
-
-          const counts =
-            getCellColorCounts(
-              integrals,
-              cx,
-              rowCenters[r],
-              halfW,
-              halfH,
-              width,
-              height
-            );
-
-
-          const main =
-            Math.max(
-              counts.red,
-              counts.blue
-            );
-
-
-          if (
-            main >= 3
-          ) {
-
-            occupied++;
-
-            detected++;
-          }
-
-
-          colRed +=
-            counts.red;
-
-
-          colBlue +=
-            counts.blue;
-        }
-
-
-        if (
-          occupied > 0
-        ) {
-
-          /*
-            同一竖排只有B或P一种颜色。
-
-            主颜色越明显，
-            说明网格越正确。
-          */
-
-          const dominant =
-            Math.max(
-              colRed,
-              colBlue
-            );
-
-
-          const weak =
-            Math.min(
-              colRed,
-              colBlue
-            );
-
-
-          score +=
-            occupied *
-            20;
-
-
-          score +=
-            dominant *
-            0.20;
-
-
-          score -=
-            weak *
-            0.12;
-        }
-      }
-
-
-      score +=
-        detected *
-        8;
-
-
-      if (
-        !best ||
-        score >
-        best.score
-      ) {
-
-        best = {
-
-          score,
-
-          spacing,
-
-          offset,
-
-          rowSpacing,
-
-          rowCenters
-        };
-      }
-    }
-  }
-
-
-  if (!best) {
-
-    throw new Error(
-      '无法确定珠盘路网格'
-    );
-  }
-
-
-  return best;
-}
-
-
-/* =====================================================
-   建立所有列中心
-   ===================================================== */
-
-function buildColumnCenters(
-  grid,
-  width
-) {
+  const stack = [];
 
   const result = [];
 
 
-  const spacing =
-    grid.spacing;
-
-
-  let first =
-    grid.offset;
-
-
-  while (
-    first -
-    spacing >
-    -spacing *
-    0.5
-  ) {
-
-    first -=
-      spacing;
-  }
-
-
-  while (
-    first <
-    -spacing *
-    0.5
-  ) {
-
-    first +=
-      spacing;
-  }
+  const absoluteMinArea =
+    Math.max(
+      4,
+      Math.floor(
+        total *
+        0.0000025
+      )
+    );
 
 
   for (
-    let x = first;
-
-    x <
-      width +
-      spacing *
-      0.5;
-
-    x +=
-      spacing
+    let start = 0;
+    start < total;
+    start++
   ) {
 
     if (
-      x >=
-        -spacing *
-        0.2 &&
-      x <=
-        width +
-        spacing *
-        0.2
+      !mask[start] ||
+      visited[start]
+    ) {
+      continue;
+    }
+
+
+    visited[start] = 1;
+
+
+    stack.length = 0;
+
+    stack.push(start);
+
+
+    let area = 0;
+
+    let sumX = 0;
+
+    let sumY = 0;
+
+    let minX = width;
+
+    let maxX = 0;
+
+    let minY = height;
+
+    let maxY = 0;
+
+
+    while (
+      stack.length
     ) {
 
-      result.push(x);
+      const cur =
+        stack.pop();
+
+
+      const y =
+        Math.floor(
+          cur /
+          width
+        );
+
+
+      const x =
+        cur -
+        y *
+        width;
+
+
+      area++;
+
+      sumX += x;
+
+      sumY += y;
+
+
+      if (x < minX) {
+        minX = x;
+      }
+
+      if (x > maxX) {
+        maxX = x;
+      }
+
+      if (y < minY) {
+        minY = y;
+      }
+
+      if (y > maxY) {
+        maxY = y;
+      }
+
+
+      /*
+        8方向连接。
+
+        红蓝圆即使被绿线切一点，
+        也更容易保持为同一个主体。
+      */
+
+      for (
+        let oy = -1;
+        oy <= 1;
+        oy++
+      ) {
+
+        for (
+          let ox = -1;
+          ox <= 1;
+          ox++
+        ) {
+
+          if (
+            ox === 0 &&
+            oy === 0
+          ) {
+            continue;
+          }
+
+
+          const nx =
+            x + ox;
+
+
+          const ny =
+            y + oy;
+
+
+          if (
+            nx < 0 ||
+            nx >= width ||
+            ny < 0 ||
+            ny >= height
+          ) {
+            continue;
+          }
+
+
+          const n =
+            ny *
+            width +
+            nx;
+
+
+          if (
+            mask[n] &&
+            !visited[n]
+          ) {
+
+            visited[n] = 1;
+
+            stack.push(n);
+          }
+        }
+      }
     }
+
+
+    if (
+      area <
+      absoluteMinArea
+    ) {
+      continue;
+    }
+
+
+    const bw =
+      maxX -
+      minX +
+      1;
+
+
+    const bh =
+      maxY -
+      minY +
+      1;
+
+
+    if (
+      bw < 2 ||
+      bh < 2
+    ) {
+      continue;
+    }
+
+
+    result.push({
+
+      x:
+        sumX /
+        area,
+
+      y:
+        sumY /
+        area,
+
+      width:
+        bw,
+
+      height:
+        bh,
+
+      area
+    });
   }
 
 
@@ -1752,368 +1472,1038 @@ function buildColumnCenters(
 
 
 /* =====================================================
-   分析一整列
-
-   重点：
-
-   同一竖排只能是一种B/P。
-
-   如果中间某格颜色太弱，
-   但下面仍然有同色结果，
-   就根据整列结构补回来。
+   中位数
    ===================================================== */
 
-function analyseColumn(
-  integrals,
-  cx,
-  grid,
-  width,
-  height
-) {
+function median(arr) {
 
-  const rows = 6;
+  if (!arr.length) {
+    return 0;
+  }
 
 
-  const cellInfo = [];
-
-
-  let totalRed = 0;
-
-  let totalBlue = 0;
-
-
-  const halfW =
-    grid.spacing *
-    0.44;
-
-
-  const halfH =
-    grid.rowSpacing *
-    0.44;
-
-
-  for (
-    let r = 0;
-    r < rows;
-    r++
-  ) {
-
-    const counts =
-      getCellColorCounts(
-        integrals,
-        cx,
-        grid.rowCenters[r],
-        halfW,
-        halfH,
-        width,
-        height
+  const a =
+    [...arr]
+      .sort(
+        (x, y) =>
+          x - y
       );
 
 
-    totalRed +=
-      counts.red;
-
-
-    totalBlue +=
-      counts.blue;
-
-
-    cellInfo.push(counts);
-  }
-
-
-  const dominant =
-    Math.max(
-      totalRed,
-      totalBlue
+  const m =
+    Math.floor(
+      a.length /
+      2
     );
 
 
-  /*
-    空列
-  */
+  if (
+    a.length %
+    2
+  ) {
+    return a[m];
+  }
+
+
+  return (
+    a[m - 1] +
+    a[m]
+  )
+  /
+  2;
+}
+
+
+/* =====================================================
+   估计圆大小
+   ===================================================== */
+
+function estimateNormalDiameter(
+  components
+) {
 
   if (
-    dominant < 6
+    !components.length
   ) {
+    return 12;
+  }
 
-    return {
-      empty:true
-    };
+
+  const sizes =
+    components
+      .map(
+        p =>
+          Math.max(
+            p.width,
+            p.height
+          )
+      )
+      .filter(
+        size =>
+          size >= 3
+      )
+      .sort(
+        (a, b) =>
+          a - b
+      );
+
+
+  if (
+    !sizes.length
+  ) {
+    return 12;
   }
 
 
   /*
-    整列先确定B/P
+    去掉最小的一些碎片
   */
 
-  const side =
-    totalRed >=
-    totalBlue
-      ? 'B'
-      : 'P';
+  const start =
+    Math.floor(
+      sizes.length *
+      0.20
+    );
 
 
-  const strongThreshold = 3;
+  const usable =
+    sizes.slice(start);
 
 
-  let lastStrongRow = -1;
+  return (
+    median(usable)
+    ||
+    median(sizes)
+    ||
+    12
+  );
+}
+
+
+/* =====================================================
+   过滤真实圆主体
+   ===================================================== */
+
+function getGridAnchors(
+  components,
+  normalDiameter
+) {
+
+  const minSize =
+    normalDiameter *
+    0.38;
+
+
+  const maxSize =
+    normalDiameter *
+    1.9;
+
+
+  const minArea =
+    Math.max(
+      3,
+      normalDiameter *
+      normalDiameter *
+      0.035
+    );
+
+
+  return components.filter(
+    p => {
+
+      const big =
+        Math.max(
+          p.width,
+          p.height
+        );
+
+
+      const small =
+        Math.min(
+          p.width,
+          p.height
+        );
+
+
+      if (
+        big <
+        minSize ||
+        big >
+        maxSize
+      ) {
+        return false;
+      }
+
+
+      /*
+        太细长的红蓝线不是圆
+  */
+
+      if (
+        small /
+        big <
+        0.22
+      ) {
+        return false;
+      }
+
+
+      if (
+        p.area <
+        minArea
+      ) {
+        return false;
+      }
+
+
+      return true;
+    }
+  );
+}
+
+
+/* =====================================================
+   一维聚类
+   ===================================================== */
+
+function clusterValues(
+  values,
+  tolerance
+) {
+
+  if (
+    !values.length
+  ) {
+    return [];
+  }
+
+
+  const sorted =
+    [...values]
+      .sort(
+        (a, b) =>
+          a - b
+      );
+
+
+  const groups = [];
+
+
+  sorted.forEach(
+    value => {
+
+      let best =
+        null;
+
+
+      let bestDist =
+        Infinity;
+
+
+      groups.forEach(
+        group => {
+
+          const d =
+            Math.abs(
+              value -
+              group.center
+            );
+
+
+          if (
+            d <= tolerance &&
+            d < bestDist
+          ) {
+
+            best =
+              group;
+
+
+            bestDist =
+              d;
+          }
+        }
+      );
+
+
+      if (!best) {
+
+        groups.push({
+
+          center:
+            value,
+
+          values:
+            [value]
+        });
+
+
+        return;
+      }
+
+
+      best.values.push(
+        value
+      );
+
+
+      best.center =
+        best.values.reduce(
+          (sum, x) =>
+            sum + x,
+          0
+        )
+        /
+        best.values.length;
+    }
+  );
+
+
+  groups.sort(
+    (a, b) =>
+      a.center -
+      b.center
+  );
+
+
+  return groups;
+}
+
+
+/* =====================================================
+   估计网格间距
+   ===================================================== */
+
+function estimateGridSpacing(
+  centers,
+  normalDiameter
+) {
+
+  if (
+    centers.length <
+    2
+  ) {
+
+    return (
+      normalDiameter *
+      1.25
+    );
+  }
+
+
+  const diffs = [];
 
 
   for (
-    let r = 0;
-    r < rows;
-    r++
+    let i = 1;
+    i < centers.length;
+    i++
   ) {
 
-    const sameColor =
-      side === 'B'
-        ?
-        cellInfo[r].red
-        :
-        cellInfo[r].blue;
+    const d =
+      centers[i] -
+      centers[i - 1];
 
 
     if (
-      sameColor >=
-      strongThreshold
+      d >
+      normalDiameter *
+      0.45
     ) {
 
-      lastStrongRow = r;
+      diffs.push(d);
     }
   }
 
 
   if (
-    lastStrongRow < 0
+    !diffs.length
   ) {
 
-    return {
-      empty:true
-    };
+    return (
+      normalDiameter *
+      1.25
+    );
   }
+
+
+  diffs.sort(
+    (a, b) =>
+      a - b
+  );
+
+
+  /*
+    较小的间距更接近真实格距，
+    大间距可能是中间空列。
+  */
+
+  const usable =
+    diffs.slice(
+      0,
+      Math.max(
+        1,
+        Math.ceil(
+          diffs.length *
+          0.60
+        )
+      )
+    );
+
+
+  return (
+    median(usable)
+    ||
+    normalDiameter *
+    1.25
+  );
+}
+
+
+/* =====================================================
+   建立6行网格
+
+   注意：
+   这里只确定位置。
+
+   不代表每个格子都有结果。
+   ===================================================== */
+
+function buildGrid(
+  anchors,
+  normalDiameter
+) {
+
+  if (
+    anchors.length <
+    2
+  ) {
+
+    throw new Error(
+      '识别到的红蓝圆太少'
+    );
+  }
+
+
+  const tolerance =
+    normalDiameter *
+    0.58;
+
+
+  let rowGroups =
+    clusterValues(
+      anchors.map(
+        p => p.y
+      ),
+      tolerance
+    );
+
+
+  let colGroups =
+    clusterValues(
+      anchors.map(
+        p => p.x
+      ),
+      tolerance
+    );
+
+
+  /*
+    只保留6个主要行
+  */
+
+  if (
+    rowGroups.length >
+    6
+  ) {
+
+    rowGroups =
+      [...rowGroups]
+        .sort(
+          (a, b) =>
+            b.values.length -
+            a.values.length
+        )
+        .slice(
+          0,
+          6
+        )
+        .sort(
+          (a, b) =>
+            a.center -
+            b.center
+        );
+  }
+
+
+  let rowCenters =
+    rowGroups.map(
+      g => g.center
+    );
+
+
+  let colCenters =
+    colGroups.map(
+      g => g.center
+    );
+
+
+  const rowSpacing =
+    estimateGridSpacing(
+      rowCenters,
+      normalDiameter
+    );
+
+
+  const colSpacing =
+    estimateGridSpacing(
+      colCenters,
+      normalDiameter
+    );
+
+
+  /*
+    如果少了一行，
+    可以补“行的位置”。
+
+    这里只补网格坐标，
+    后面仍然必须真实检测到红/蓝，
+    才会增加一手。
+  */
+
+  if (
+    rowCenters.length >= 2 &&
+    rowCenters.length < 6
+  ) {
+
+    const first =
+      rowCenters[0];
+
+
+    const generated =
+      [];
+
+
+    for (
+      let i = 0;
+      i < 6;
+      i++
+    ) {
+
+      const expected =
+        first +
+        i *
+        rowSpacing;
+
+
+      let nearest =
+        null;
+
+
+      let nearestDist =
+        Infinity;
+
+
+      rowCenters.forEach(
+        y => {
+
+          const d =
+            Math.abs(
+              y -
+              expected
+            );
+
+
+          if (
+            d <
+            nearestDist
+          ) {
+
+            nearest =
+              y;
+
+            nearestDist =
+              d;
+          }
+        }
+      );
+
+
+      if (
+        nearest !== null &&
+        nearestDist <
+        rowSpacing *
+        0.40
+      ) {
+
+        generated.push(
+          nearest
+        );
+
+      } else {
+
+        generated.push(
+          expected
+        );
+      }
+    }
+
+
+    rowCenters =
+      generated;
+  }
+
+
+  rowCenters =
+    rowCenters
+      .sort(
+        (a, b) =>
+          a - b
+      )
+      .slice(
+        0,
+        6
+      );
+
+
+  colCenters =
+    colCenters
+      .sort(
+        (a, b) =>
+          a - b
+      );
 
 
   return {
 
-    empty:false,
+    rows:
+      rowCenters,
 
-    side,
+    columns:
+      colCenters,
 
-    lastRow:
-      lastStrongRow,
+    rowSpacing,
 
-    cellInfo,
-
-    totalRed,
-
-    totalBlue
+    colSpacing
   };
 }
 
 
 /* =====================================================
-   读取完整珠盘路
+   单个格子真实识别
 
-   每列：
-   上 -> 下
+   重点：
 
-   再进入右边下一列。
-
-   只输出 B/P。
+   不自动补。
+   真的看到颜色才算。
    ===================================================== */
 
-function readRoadGrid(
-  integrals,
-  grid,
+function classifyGridCell(
+  imageData,
   width,
-  height
+  height,
+  cx,
+  cy,
+  sampleRadius
 ) {
 
-  const columns =
-    buildColumnCenters(
-      grid,
-      width
+  const data =
+    imageData.data;
+
+
+  const radius =
+    Math.max(
+      4,
+      Math.floor(
+        sampleRadius
+      )
     );
 
 
-  const analysed = [];
+  const radiusSq =
+    radius *
+    radius;
 
 
-  columns.forEach(cx => {
-
-    analysed.push({
-
-      cx,
-
-      result:
-        analyseColumn(
-          integrals,
-          cx,
-          grid,
-          width,
-          height
-        )
-    });
-  });
+  const minX =
+    Math.max(
+      0,
+      Math.floor(
+        cx -
+        radius
+      )
+    );
 
 
-  /*
-    找最后有效列
-  */
+  const maxX =
+    Math.min(
+      width - 1,
+      Math.ceil(
+        cx +
+        radius
+      )
+    );
 
-  let lastValid = -1;
+
+  const minY =
+    Math.max(
+      0,
+      Math.floor(
+        cy -
+        radius
+      )
+    );
+
+
+  const maxY =
+    Math.min(
+      height - 1,
+      Math.ceil(
+        cy +
+        radius
+      )
+    );
+
+
+  let redCount = 0;
+
+  let blueCount = 0;
+
+  let sampled = 0;
 
 
   for (
-    let i = 0;
-    i < analysed.length;
-    i++
+    let y = minY;
+    y <= maxY;
+    y++
   ) {
 
-    if (
-      !analysed[i]
-        .result
-        .empty
+    for (
+      let x = minX;
+      x <= maxX;
+      x++
     ) {
 
-      lastValid = i;
+      const dx =
+        x -
+        cx;
+
+
+      const dy =
+        y -
+        cy;
+
+
+      if (
+        dx * dx +
+        dy * dy >
+        radiusSq
+      ) {
+        continue;
+      }
+
+
+      sampled++;
+
+
+      const pos =
+        (
+          y *
+          width +
+          x
+        )
+        *
+        4;
+
+
+      const type =
+        classifyColor(
+          data[pos],
+          data[pos + 1],
+          data[pos + 2],
+          data[pos + 3]
+        );
+
+
+      if (
+        type === 'B'
+      ) {
+
+        redCount++;
+
+      } else if (
+        type === 'P'
+      ) {
+
+        blueCount++;
+      }
     }
   }
 
 
   if (
-    lastValid < 0
+    !sampled
+  ) {
+    return null;
+  }
+
+
+  const bestCount =
+    Math.max(
+      redCount,
+      blueCount
+    );
+
+
+  const secondCount =
+    Math.min(
+      redCount,
+      blueCount
+    );
+
+
+  /*
+    必须真的存在一定量红/蓝像素。
+
+    不能因为“这一列应该有”
+    就自动增加。
+  */
+
+  const minPixels =
+    Math.max(
+      3,
+      Math.floor(
+        sampled *
+        0.012
+      )
+    );
+
+
+  if (
+    bestCount <
+    minPixels
   ) {
 
-    throw new Error(
-      '没有识别到珠盘路结果'
-    );
+    return null;
   }
 
 
   /*
-    找第一有效列
+    主颜色必须明显高于另一种颜色。
+
+    这样可以防止跨到旁边圆。
   */
 
-  let firstValid = 0;
-
-
-  while (
-    firstValid <=
-      lastValid &&
-    analysed[
-      firstValid
-    ].result.empty
+  if (
+    secondCount > 0 &&
+    bestCount <
+    secondCount *
+    1.20
   ) {
 
-    firstValid++;
+    return null;
   }
 
 
-  const sequence = [];
+  return (
+    redCount >
+    blueCount
+      ?
+      'B'
+      :
+      'P'
+  );
+}
 
 
-  let repairedCount = 0;
+/* =====================================================
+   读取网格
+
+   关键修复：
+
+   每一格单独判断。
+
+   不连续补格。
+   不自动补弱格。
+   不根据lastRow填满。
+   ===================================================== */
+
+function gridToSequence(
+  imageData,
+  width,
+  height,
+  grid,
+  normalDiameter
+) {
+
+  const sequence =
+    [];
+
+
+  /*
+    采样半径不要太大，
+    否则可能扫到上下左右其他圆。
+  */
+
+  const sampleRadius =
+    Math.max(
+
+      normalDiameter *
+      0.58,
+
+      Math.min(
+        grid.rowSpacing,
+        grid.colSpacing
+      )
+      *
+      0.34
+    );
 
 
   for (
-    let c =
-      firstValid;
-
-    c <=
-      lastValid;
-
+    let c = 0;
+    c < grid.columns.length;
     c++
   ) {
 
-    const column =
-      analysed[c];
-
-
-    const info =
-      column.result;
-
-
-    if (
-      info.empty
-    ) {
-
-      /*
-        整列完全空就跳过。
-        不自动凭空猜整列。
-      */
-
-      continue;
-    }
-
-
-    const side =
-      info.side;
+    const cx =
+      grid.columns[c];
 
 
     /*
-      从第一格读到本列最后明显结果。
+      先看整列红蓝倾向。
 
-      中间如果颜色弱，
-      根据同列同色结构补回来。
+      这里只辅助判断颜色，
+      绝不增加格子。
+    */
+
+    let columnRed = 0;
+
+    let columnBlue = 0;
+
+
+    const cellResults =
+      [];
+
+
+    for (
+      let r = 0;
+      r < grid.rows.length;
+      r++
+    ) {
+
+      const cy =
+        grid.rows[r];
+
+
+      const result =
+        classifyGridCell(
+          imageData,
+          width,
+          height,
+          cx,
+          cy,
+          sampleRadius
+        );
+
+
+      cellResults.push(
+        result
+      );
+
+
+      if (
+        result === 'B'
+      ) {
+
+        columnRed++;
+
+      } else if (
+        result === 'P'
+      ) {
+
+        columnBlue++;
+      }
+    }
+
+
+    /*
+      整列主颜色
+
+      只有已经真实识别出的格子
+      才参与统计。
+  */
+
+    let columnSide =
+      null;
+
+
+    if (
+      columnRed >
+      columnBlue
+    ) {
+
+      columnSide = 'B';
+
+    } else if (
+      columnBlue >
+      columnRed
+    ) {
+
+      columnSide = 'P';
+    }
+
+
+    /*
+      正式输出：
+
+      只有非空格才加入。
+
+      同列规则只用于纠正
+      某个真实识别格子的B/P颜色。
+
+      null永远不会自动变成B或P。
   */
 
     for (
       let r = 0;
-      r <=
-        info.lastRow;
+      r < cellResults.length;
       r++
     ) {
 
-      const counts =
-        info.cellInfo[r];
+      const result =
+        cellResults[r];
 
 
-      const sameColor =
-        side === 'B'
-          ?
-          counts.red
-          :
-          counts.blue;
-
-
-      if (
-        sameColor < 3
-      ) {
-
-        repairedCount++;
+      if (!result) {
+        continue;
       }
 
 
-      sequence.push(side);
+      if (
+        columnSide
+      ) {
+
+        sequence.push(
+          columnSide
+        );
+
+      } else {
+
+        sequence.push(
+          result
+        );
+      }
     }
   }
 
 
-  return {
-
-    sequence,
-
-    bpCount:
-      sequence.length,
-
-    repairedCount,
-
-    firstColumn:
-      firstValid,
-
-    lastColumn:
-      lastValid
-  };
+  return sequence;
 }
 
 
 /* =====================================================
    截图识别
-
-   只识别红/蓝。
-   完全不处理绿色。
    ===================================================== */
 
 function recognizeRoad(img) {
@@ -2125,7 +2515,7 @@ function recognizeRoad(img) {
   if (!canvas) {
 
     throw new Error(
-      '找不到scanCanvas'
+      '找不到 scanCanvas'
     );
   }
 
@@ -2134,17 +2524,18 @@ function recognizeRoad(img) {
     canvas.getContext(
       '2d',
       {
-        willReadFrequently:true
+        willReadFrequently:
+          true
       }
     );
 
 
   /*
-    小珠盘截图尽量保持原图，
-    只有特别大才缩小。
+    尽量保留原图清晰度。
   */
 
-  const maxWidth = 1400;
+  const maxWidth =
+    1400;
 
 
   let w =
@@ -2184,9 +2575,12 @@ function recognizeRoad(img) {
   }
 
 
-  canvas.width = w;
+  canvas.width =
+    w;
 
-  canvas.height = h;
+
+  canvas.height =
+    h;
 
 
   ctx.clearRect(
@@ -2217,96 +2611,140 @@ function recognizeRoad(img) {
 
   /*
     1.
-    只建立红蓝Mask
+    找真实红蓝区域
   */
 
-  const masks =
-    createColorMasks(
+  const components =
+    findColorComponents(
       imageData,
       w,
       h
     );
 
 
+  if (
+    components.length <
+    2
+  ) {
+
+    throw new Error(
+      '没有找到足够的红蓝圆'
+    );
+  }
+
+
   /*
     2.
-    Integral
+    估计圆大小
   */
 
-  const integrals = {
-
-    red:
-      buildIntegral(
-        masks.red,
-        w,
-        h
-      ),
-
-    blue:
-      buildIntegral(
-        masks.blue,
-        w,
-        h
-      )
-  };
+  const normalDiameter =
+    estimateNormalDiameter(
+      components
+    );
 
 
   /*
     3.
-    找固定6行珠盘网格
+    过滤圆主体
   */
 
-  const grid =
-    findBestGrid(
-      integrals,
-      w,
-      h
+  const anchors =
+    getGridAnchors(
+      components,
+      normalDiameter
     );
+
+
+  if (
+    anchors.length <
+    2
+  ) {
+
+    throw new Error(
+      '无法定位路单网格'
+    );
+  }
 
 
   /*
     4.
-    按整列规则读取B/P
+    建网格位置
   */
 
-  const read =
-    readRoadGrid(
-      integrals,
-      grid,
-      w,
-      h
+  const grid =
+    buildGrid(
+      anchors,
+      normalDiameter
     );
+
+
+  if (
+    !grid.rows.length ||
+    !grid.columns.length
+  ) {
+
+    throw new Error(
+      '无法建立路单行列'
+    );
+  }
+
+
+  /*
+    5.
+    每个格子真实识别
+
+    没检测到红/蓝就不算。
+  */
+
+  const sequence =
+    gridToSequence(
+      imageData,
+      w,
+      h,
+      grid,
+      normalDiameter
+    );
+
+
+  if (
+    !sequence.length
+  ) {
+
+    throw new Error(
+      '没有识别到B/P'
+    );
+  }
 
 
   return {
 
-    sequence:
-      read.sequence,
+    sequence,
 
     bpCount:
-      read.bpCount,
+      sequence.length,
 
-    repairedCount:
-      read.repairedCount,
+    width:
+      w,
 
-    width:w,
+    height:
+      h,
 
-    height:h,
+    normalDiameter,
 
-    spacing:
-      grid.spacing,
+    rows:
+      grid.rows.length,
 
-    rowSpacing:
-      grid.rowSpacing
+    columns:
+      grid.columns.length
   };
 }
 
 
 /* =====================================================
-   导入截图结果
+   导入识别结果
 
-   现在只有 B / P。
-   没有T。
+   只存在 B / P。
    ===================================================== */
 
 function importRecognizedSequence(
@@ -2346,16 +2784,27 @@ function importRecognizedSequence(
 
 
   /*
-    没按Reset：
-    永远继续追加。
+    最终规则：
+
+    没有按Reset，
+    本次识别多少，
+    就追加多少。
+
+    不覆盖。
+    不去重。
   */
 
   bpSequence.forEach(
     result => {
 
-      gameHistory.push(result);
+      gameHistory.push(
+        result
+      );
 
-      advanceAfterInput(result);
+
+      advanceAfterInput(
+        result
+      );
     }
   );
 
@@ -2433,7 +2882,7 @@ function setupImageRecognition() {
       if (status) {
 
         status.textContent =
-          '正在识别珠盘路 B/P……';
+          '正在识别红色B / 蓝色P……';
       }
 
 
@@ -2445,7 +2894,9 @@ function setupImageRecognition() {
 
 
       const url =
-        URL.createObjectURL(file);
+        URL.createObjectURL(
+          file
+        );
 
 
       img.onload =
@@ -2454,17 +2905,9 @@ function setupImageRecognition() {
         try {
 
           const result =
-            recognizeRoad(img);
-
-
-          if (
-            !result.sequence.length
-          ) {
-
-            throw new Error(
-              '没有识别到珠盘路'
+            recognizeRoad(
+              img
             );
-          }
 
 
           const imported =
@@ -2478,14 +2921,7 @@ function setupImageRecognition() {
             status.textContent =
               `✅ 珠盘路识别完成 ｜ ` +
               `本次追加 ${imported.bpCount}手 ｜ ` +
-              `总历史 ${imported.afterCount}手` +
-              (
-                result.repairedCount
-                  ?
-                  ` ｜ 自动补回${result.repairedCount}个弱格`
-                  :
-                  ''
-              );
+              `总历史 ${imported.afterCount}手`;
           }
 
         } catch (err) {
@@ -2504,7 +2940,9 @@ function setupImageRecognition() {
           setButtonsDisabled(false);
 
 
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(
+            url
+          );
         }
       };
 
@@ -2522,11 +2960,14 @@ function setupImageRecognition() {
         setButtonsDisabled(false);
 
 
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(
+          url
+        );
       };
 
 
-      img.src = url;
+      img.src =
+        url;
     }
   );
 }
@@ -2550,71 +2991,61 @@ function() {
   if (text) {
 
     text.textContent =
-`使用规则：
+`最终版使用规则：
 
 【截图识别】
 
-以后只截图珠盘路区域。
+只截路单区域。
 
-程序现在只识别：
+程序只识别：
 
 红圈 = B
 蓝圈 = P
 
-绿色斜杠全部忽略。
+绿色全部忽略。
 
-不识别和，
-不统计和，
-也不会因为绿色斜杠增加手数。
-
-
-珠盘路固定6行。
-
-同一竖排只会是一种结果：
-
-整列B
-或者
-整列P
-
-不会同一列B/P混合。
+不识别和。
+不统计和。
+不会因为绿色增加手数。
 
 
-程序会先判断整列是B还是P，
-再从上往下读取。
+每一手都必须真的检测到
+红色或蓝色主体才会加入。
 
-如果某一个红圈或蓝圈
-被绿色斜杠遮住一部分，
+不会再自动补空格。
+不会因为一列有6格位置
+就强行加入6手。
 
-但这一列上下结构证明
-这一格应该存在，
 
-程序会按照整列B/P
-自动把弱格补回来。
+同一竖排的颜色规则
+只用于辅助判断B还是P，
+
+绝对不会用来凭空增加手数。
 
 
 【追加规则】
 
-只要没有点击Reset：
+没有按Reset：
 
-截图识别出的所有B/P
-继续追加到历史。
+截图识别多少B/P
+就追加多少B/P。
 
-手动点击P/B
-也继续追加。
+手动输入P/B
+也一样继续追加。
 
 
 例如：
 
-截图67手
+截图65手
 +
 手动5手
 +
-再截图20手
+下一张截图20手
 
-总历史 = 92手。
+总历史 = 90手。
 
 
-【统计】
+【第91手统计】
 
 第91个B/P开始统计：
 
@@ -2634,23 +3065,23 @@ function() {
 
 删除最后一个B/P，
 
-然后根据剩余历史
-全部重新计算。
+然后按剩余全部历史
+重新计算。
 
 
 【Reset】
 
-Reset是唯一清零方式。
+唯一清零方式。
 
-会清空：
+Reset以后清空：
 
 历史
 套入状态
-门槛状态
-预测状态
-统计
-当前连对
-当前连错
+门槛
+预测
+命中统计
+连对
+连错
 最大连对
 最大连错。`;
   }
