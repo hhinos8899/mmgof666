@@ -92,12 +92,14 @@ body{
     );
 
   color:#001018;
+
   font-size:16px;
   font-weight:900;
 }
 
 .title{
   flex:1;
+
   font-size:18px;
   font-weight:800;
 }
@@ -213,7 +215,6 @@ body{
 
 /* =========================
    第91手统计
-   两排、正常大字
    ========================= */
 
 .pred-stats{
@@ -322,6 +323,7 @@ body{
   font-weight:900;
 
   cursor:pointer;
+
   white-space:nowrap;
 }
 
@@ -350,6 +352,7 @@ body{
 
 .scan-btn{
   color:#fff;
+
   background:#176d42;
 
   border-color:
@@ -398,8 +401,8 @@ body{
 
 
 /* =========================
-   历史
-   重点：内部独立滚动
+   历史区域
+   可滚动 + 底部留安全空间
    ========================= */
 
 .history{
@@ -435,11 +438,6 @@ body{
 }
 
 .record{
-  /*
-    关键修复：
-    高度必须真正限制在剩余空间里，
-    才能形成内部滚动区域。
-  */
   flex:1 1 0;
   min-height:0;
   height:0;
@@ -453,7 +451,18 @@ body{
   overflow-y:auto !important;
   overflow-x:hidden;
 
-  padding:1px 8px 16px 2px;
+  /*
+    重点：
+    底部留足空间，
+    滚到最后时最后几排不会贴着屏幕底部。
+  */
+  padding:
+    1px
+    8px
+    95px
+    2px;
+
+  scroll-padding-bottom:95px;
 
   overscroll-behavior:contain;
 
@@ -698,7 +707,13 @@ body{
   }
 
   .record{
-    padding-right:7px;
+    padding:
+      1px
+      7px
+      95px
+      2px;
+
+    scroll-padding-bottom:95px;
   }
 
   .record-item{
