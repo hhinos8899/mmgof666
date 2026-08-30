@@ -1,6 +1,6 @@
 /* =====================================================
    AI 预测系统
-   app.js V13 稳定版
+   app.js V14 最终稳定版
 
    截图识别：
 
@@ -16,6 +16,10 @@
    5. 真实检测到红/蓝才算一手
    6. 同一竖排颜色只辅助判断 B/P
    7. 过滤最左边明显的小残片
+   8. 检查第一列是否为重复假列
+      专门修复：
+      49手被识别成50手、
+      开头多一个P的问题
    ===================================================== */
 
 
@@ -112,6 +116,7 @@ let maxLoseStreak = 0;
    ===================================================== */
 
 function byId(id) {
+
   return document.getElementById(id);
 }
 
@@ -126,6 +131,7 @@ function setButtonsDisabled(disabled) {
     document.querySelectorAll(
       '.btn'
     );
+
 
   buttons.forEach(btn => {
 
@@ -144,12 +150,16 @@ function setLabelAI() {
   const label =
     byId('resultLabel');
 
+
   if (!label) {
+
     return;
   }
 
+
   label.textContent =
     'AI';
+
 
   label.classList.remove(
     'player',
@@ -163,17 +173,22 @@ function setLabelSide(side) {
   const label =
     byId('resultLabel');
 
+
   if (!label) {
+
     return;
   }
 
+
   label.textContent =
     side;
+
 
   label.classList.remove(
     'player',
     'banker'
   );
+
 
   label.classList.add(
     side === 'B'
@@ -187,10 +202,12 @@ function showTextOnly(msg) {
 
   setLabelAI();
 
+
   const text =
     byId(
       'predictionText'
     );
+
 
   if (text) {
 
@@ -211,7 +228,9 @@ function renderHistory() {
       'recordDisplay'
     );
 
+
   if (!recordDisplay) {
+
     return;
   }
 
@@ -227,11 +246,14 @@ function renderHistory() {
         'div'
       );
 
+
     item.className =
       `record-item ${type.toLowerCase()}`;
 
+
     item.textContent =
       type;
+
 
     recordDisplay.appendChild(
       item
@@ -243,6 +265,7 @@ function renderHistory() {
     byId(
       'historyCount'
     );
+
 
   if (count) {
 
@@ -293,6 +316,7 @@ function settlePrediction(
     realHand <
     STATS_START_HAND
   ) {
+
     return;
   }
 
@@ -301,6 +325,7 @@ function settlePrediction(
     actual !== 'B' &&
     actual !== 'P'
   ) {
+
     return;
   }
 
@@ -309,6 +334,7 @@ function settlePrediction(
     predicted !== 'B' &&
     predicted !== 'P'
   ) {
+
     return;
   }
 
@@ -1086,7 +1112,8 @@ function rgbToHSV(
 
 
   const d =
-    max - min;
+    max -
+    min;
 
 
   let h = 0;
@@ -1682,10 +1709,7 @@ function estimateMarkerSize(
 /* =====================================================
    过滤明显噪点
 
-   重点：
    只额外处理最左边小残片。
-
-   不改其他正常圆。
    ===================================================== */
 
 function filterComponents(
@@ -1706,10 +1730,6 @@ function filterComponents(
     markerSize *
     1.9;
 
-
-  /*
-    最左边安全区域
-  */
 
   const leftEdge =
     markerSize *
@@ -1744,16 +1764,9 @@ function filterComponents(
 
 
     /*
-      专门修：
-      开头凭空多一个P/B。
+      最左侧只有明显小残片时才删除。
 
-      只有：
-      1. 贴着图片最左边
-      2. 自己又明显很小
-
-      才过滤。
-
-      正常完整第一手不会动。
+      正常第一手不动。
     */
 
     if (
@@ -2077,9 +2090,6 @@ function buildRealColumns(
 
     /*
       珠盘一竖排最多6手。
-
-      超过6说明截图或识别明显异常，
-      宁愿停止，不乱导入。
     */
 
     if (
@@ -2132,10 +2142,10 @@ function buildRealColumns(
 
 
     /*
-      同一竖排理论上只有一种主体颜色。
+      同一竖排只有一种主体颜色。
 
-      如果红蓝太接近，
-      宁愿报错，也不乱猜。
+      红蓝太接近就停止，
+      不乱猜。
     */
 
     if (
@@ -2177,6 +2187,144 @@ function buildRealColumns(
       a.x -
       b.x
   );
+
+
+  return columns;
+}
+
+
+/* =====================================================
+   第一列重复假列检查
+
+   专门修复：
+
+   实际49手
+   程序50手
+
+   开头：
+   P P B ...
+
+   实际应该：
+   P B ...
+
+   判断依据：
+
+   1. 第一列只有1手
+   2. 第一列到第二列的距离
+      明显小于后面的正常列距
+
+   满足两个条件，
+   才删除第一列。
+
+   不按颜色直接删，
+   不按固定位置直接删。
+   ===================================================== */
+
+function removeFalseFirstColumn(
+  columns
+) {
+
+  if (
+    columns.length <
+    3
+  ) {
+
+    return columns;
+  }
+
+
+  /*
+    从第二列开始计算正常列距。
+
+    不把第一个可疑距离
+    加入正常距离计算。
+  */
+
+  const gaps = [];
+
+
+  for (
+    let i = 1;
+    i < columns.length - 1;
+    i++
+  ) {
+
+    const gap =
+      columns[i + 1].x -
+      columns[i].x;
+
+
+    if (
+      gap > 0
+    ) {
+
+      gaps.push(
+        gap
+      );
+    }
+  }
+
+
+  if (
+    !gaps.length
+  ) {
+
+    return columns;
+  }
+
+
+  gaps.sort(
+    (a, b) =>
+      a - b
+  );
+
+
+  /*
+    使用中位数作为正常列距，
+    避免某一个异常距离影响判断。
+  */
+
+  const normalGap =
+    median(
+      gaps
+    );
+
+
+  if (
+    !normalGap ||
+    normalGap <= 0
+  ) {
+
+    return columns;
+  }
+
+
+  const firstGap =
+    columns[1].x -
+    columns[0].x;
+
+
+  /*
+    第一列只有一个结果，
+    同时第一、第二列靠得异常近，
+
+    才认为第一列是
+    同一个圆被拆出来的假列。
+  */
+
+  if (
+    columns[0].cells.length === 1 &&
+    firstGap >
+    0 &&
+    firstGap <
+    normalGap *
+    0.62
+  ) {
+
+    return columns.slice(
+      1
+    );
+  }
 
 
   return columns;
@@ -2244,8 +2392,8 @@ function recognizeRoad(img) {
 
 
   /*
-    控制最大宽度，
-    避免电脑/手机超大截图造成卡顿。
+    控制尺寸，
+    防止电脑和手机处理超大截图时卡顿。
   */
 
   const maxWidth =
@@ -2338,7 +2486,7 @@ function recognizeRoad(img) {
 
   /*
     2.
-    红蓝分别找真实区域
+    红蓝分别寻找真实区域
   */
 
   const redComponents =
@@ -2378,7 +2526,7 @@ function recognizeRoad(img) {
 
   /*
     3.
-    估计正常标记尺寸
+    估计正常圆尺寸
   */
 
   const markerSize =
@@ -2389,8 +2537,7 @@ function recognizeRoad(img) {
 
   /*
     4.
-    过滤噪点
-    + 最左边小残片
+    过滤明显噪点和左边小残片
   */
 
   components =
@@ -2413,13 +2560,13 @@ function recognizeRoad(img) {
 
   /*
     5.
-    真实标记组成真实竖列
+    根据真实圆建立真实竖列。
 
     不猜空列。
-    不补空格。
+    不补格。
   */
 
-  const columns =
+  let columns =
     buildRealColumns(
       components,
       markerSize
@@ -2438,7 +2585,32 @@ function recognizeRoad(img) {
 
   /*
     6.
-    转最终顺序
+    检查最开始是否出现
+    一个重复假列。
+
+    这是V14唯一新增的
+    主要识别修复。
+  */
+
+  columns =
+    removeFalseFirstColumn(
+      columns
+    );
+
+
+  if (
+    !columns.length
+  ) {
+
+    throw new Error(
+      '有效珠盘路列为空'
+    );
+  }
+
+
+  /*
+    7.
+    转最终B/P顺序
   */
 
   const sequence =
@@ -2460,8 +2632,8 @@ function recognizeRoad(img) {
   /*
     异常保护。
 
-    正常珠盘截图如果突然识别成
-    100多手，直接停止。
+    防止突然识别成
+    100多手直接灌入历史。
   */
 
   if (
@@ -2538,7 +2710,8 @@ function importRecognizedSequence(
 
   /*
     没按Reset：
-    永远追加。
+
+    每次截图继续追加。
 
     不覆盖。
     不去重。
@@ -2702,10 +2875,8 @@ function setupImageRecognition() {
 
           /*
             无论识别成功还是失败，
-            按钮都必须恢复。
-
-            防止出现一直灰掉不能点。
-          */
+            按钮一定恢复。
+  */
 
           setButtonsDisabled(
             false
@@ -2786,8 +2957,8 @@ function() {
 不统计和。
 
 
-每一个结果都必须
-在图片里真实检测到红色或蓝色。
+每一个结果必须
+在图片中真实检测到红色或蓝色。
 
 不会自动补空格。
 
@@ -2797,8 +2968,10 @@ function() {
 就自动增加一手。
 
 
-同一竖排的颜色规则
-只用于判断这一列是B还是P。
+同一竖排颜色
+只用于判断：
+
+这一列是B还是P。
 
 不会用于增加手数。
 
@@ -2812,12 +2985,24 @@ function() {
 从上到下。
 
 
-如果截图最左边只有
-很小的红蓝残片，
+【开头重复保护】
 
-程序会把这个残片过滤，
+如果第一列只有一手，
 
-防止开头凭空多一个P或B。
+而第一列与第二列
+距离明显小于后面的正常列距，
+
+程序会判断第一列
+可能是同一个圆产生的重复假列，
+
+自动删除这个假列。
+
+这个功能专门解决：
+
+实际49手，
+却识别成50手，
+
+开头多一个P或B的问题。
 
 
 【追加】
@@ -2825,7 +3010,7 @@ function() {
 只要没有按Reset：
 
 截图识别多少B/P
-就追加多少B/P。
+就继续追加多少B/P。
 
 手动输入P/B
 也继续追加。
@@ -2841,7 +3026,7 @@ function() {
 
 【Reset】
 
-唯一清零方式。
+Reset是唯一清零方式。
 
 
 【统计】
